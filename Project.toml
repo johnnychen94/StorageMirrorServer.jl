@@ -1,0 +1,13 @@
+name = "StorageServer"
+uuid = "c599abfa-5b8f-4a17-b52a-f0b922b74a91"
+authors = ["Johnny Chen"]
+version = "0.1.0"
+
+[compat]
+julia = "1.3"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
