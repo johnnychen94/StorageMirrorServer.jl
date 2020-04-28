@@ -1,6 +1,9 @@
 using StorageServer
 using Test
+using ReferenceTests
 
 @testset "StorageServer.jl" begin
-    # Write your own tests here.
+    # include("tst_artifact.jl")
+    # include("tst_package.jl")
+    include("tst_registry.jl")
 end
