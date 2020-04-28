@@ -1,5 +1,5 @@
 let
-# use relative path for reference test
+# use relative path to generate consistent reference test
 registry_root = joinpath("registries", "Test")
 
 test_full = read_packages(registry_root)
@@ -16,7 +16,6 @@ test_selected_package = read_packages(registry_root) do pkg
 end
 @test length(test_selected_package) == 3
 @test_reference "references/registries/test_selected_package" test_selected_package
-
 end
 
 let

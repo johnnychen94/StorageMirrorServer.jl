@@ -187,7 +187,7 @@ function get_registry_path(registry::AbstractString)
     if isdir(registry) && "Registry.toml" in readdir(registry)
         return registry
     end
-    "Registry.toml"
+
     registries = filter(joinpath.(DEPOT_PATH, "registries", registry)) do path
         isdir(path) && "Registry.toml" in readdir(path)
     end
