@@ -4,9 +4,12 @@ using Pkg
 using LibGit2
 
 using Pkg: TOML
-using Pkg.Artifacts: download_artifact, artifact_path
+using Pkg.Artifacts: download_artifact, artifact_path, artifact_names
 using Base: SHA1
 using LibGit2: GitRepo, GitObject
+using Tar
+using CodecZlib: GzipCompressor, GzipDecompressor
+using TranscodingStreams: TranscodingStream
 
 using ProgressMeter
 

@@ -32,31 +32,43 @@ function make_tarball(tree::GitTree, tarball::AbstractString; static_dir = STATI
             verify_tarball_hash(tarball, tree.hash)
         end
     catch err
-        @warn "Cannot checkout $name [$uuid] $tree_hash"
+        @warn "Cannot checkout $(tree.version)"
         return nothing
     end
 
     # 2. make tarballs for each artifacts
-    for path in eachline(pipeline(get_decompress_cmd(tarball), `$TAR -t`))
-        # NOTE: the above can't handle paths with newlines
-        # doesn't seem to be a way to get tar to use \0 instead
-        basename(path) in Pkg.Artifacts.artifact_names || continue
-
-        extract = pipeline(get_decompress_cmd(tarball), `gtar -x -O $path`)
-        artifacts = TOML.parse(read(extract, String))
-        for (key, val) in artifacts
-            if val isa Dict
-                make_tarball(Artifact(val); static_dir = static_dir)
-            elseif val isa Vector
-                # e.g., MKL for different platforms
-                foreach(val) do x
-                    make_tarball(Artifact(x); static_dir = static_dir)
-                end
+    tmp_dir, paths = open(tarball) do io
+        paths = String[]
+        Tar.extract(decompress(io)) do hdr
+            if split(hdr.path, '/')[end] in artifact_names
+                push!(paths, hdr.path)
+                return true
             else
-                @warn "invalid artifact file entry: $val"
+                return false
             end
+        end, paths
+    end
+    for path in paths
+        sys_path = joinpath(tmp_dir, path)
+        try
+            artifacts = TOML.parsefile(sys_path)
+            for (key, val) in artifacts
+                if val isa Dict
+                    make_tarball(Artifact(val); static_dir = static_dir)
+                elseif val isa Vector
+                    # e.g., MKL for different platforms
+                    foreach(val) do x
+                        make_tarball(Artifact(x); static_dir = static_dir)
+                    end
+                else
+                    @warn "invalid artifact file entry: $val"
+                end
+            end
+        catch err
+            @warn "error processing artifact file" error = err path
         end
     end
+    rm(tmp_dir, recursive = true)
 end
 
 function _checkout_tree(tree::GitTree, target_directory)
