@@ -71,6 +71,8 @@ function make_tarball(
             end
 
             make_tarball(tree, tarball; static_dir = static_dir)
+
+            @info "$(now())\t$(pkg.name)@$(ver)"
         catch err
             err isa InterruptException && rethrow(err)
             # failing to download resources for a specific version is acceptable
