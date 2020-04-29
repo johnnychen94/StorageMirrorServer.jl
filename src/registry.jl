@@ -129,6 +129,9 @@ function read_packages(
             latest_versions_num = latest_versions_num,
         ) for (uuid, info) in packages_data
     ]
+    sort!(pkgs, by=x->x.name)
+
+    return pkgs
 end
 
 function read_packages(f, registry::AbstractString; recursive = true, kwargs...)
@@ -141,6 +144,8 @@ function read_packages(f, registry::AbstractString; recursive = true, kwargs...)
     foreach(init_pkgs) do pkg
         append_deps!(pkgs, pkg, all_packages)
     end
+    sort!(pkgs, by=x->x.name)
+
     return pkgs
 end
 
