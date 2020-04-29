@@ -35,3 +35,25 @@ mktempdir() do root_dir
     end
 end
 end
+
+let
+# https://github.com/rjdverbeek-tud/Atmosphere.jl.git doesn't exists
+
+static_dir = "static"
+clones_dir = "clones"
+
+uuid = "2c84d669-3b95-46c3-a358-9a76f739ac9c"
+registry_item_dir = joinpath(get_registry_path("General"), "A", "Atmosphere")
+
+pkg = Package("Atmosphere.jl", uuid, registry_item_dir)
+
+mktempdir() do root_dir
+    cd(root_dir) do
+        make_tarball(pkg; static_dir=static_dir, clones_dir=clones_dir)
+
+        # failed to clone
+        source_dir = joinpath(root_dir, static_dir, "package", uuid)
+        @test !isdir(source_dir)
+    end
+end
+end

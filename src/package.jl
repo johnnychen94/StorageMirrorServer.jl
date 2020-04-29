@@ -33,7 +33,16 @@ function make_tarball(pkg::Package; static_dir = STATIC_DIR, clones_dir = CLONES
 
     # 1. clone repo
     clone_dir = joinpath(clones_dir, pkg.uuid)
-    _clone_repo(pkg, clone_dir)
+    try
+        _clone_repo(pkg, clone_dir)
+    catch err
+        # although `git clone` removes `clone_dir` at failure
+        # here we manually remove it again for safety
+        rm(clone_dir, recursive = true, force = true)
+        @warn err name = pkg.name uuid = pkg.uuid
+        return
+    end
+    isdir(clone_dir) || return
 
     # 2. make tarball for each version in the registry
     for (ver, info) in pkg.versions
@@ -92,9 +101,6 @@ function _clone_repo(pkg::Package, clone_dir)
     end
 
     if is_clone_failure
-        # although `git clone` removes `clone_dir` at failure
-        # here we manually remove it again for safety
-        rm(clone_dir, recursive = true, force = true)
         @error "Cannot clone $(pkg.name) [$(pkg.uuid)]"
     end
 end
