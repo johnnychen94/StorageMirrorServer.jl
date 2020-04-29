@@ -57,12 +57,11 @@ function make_tarball(
     reg_data = TOML.parsefile(reg_file)
 
     # 1. generate registry tarball
-    tree_hash = readchomp(`git -C $registry_root rev-parse 'HEAD^{tree}'`)
+    registry_hash = readchomp(`git -C $registry_root rev-parse 'HEAD^{tree}'`)
+    registry = GitTree(registry_root, registry_hash)
     uuid = reg_data["uuid"]
-    tarball = joinpath(static_dir, "registry", uuid, tree_hash)
-    mkpath(dirname(tarball))
-    make_tarball(registry_root, tarball)
-    verify_tarball_hash(tarball, SHA1(tree_hash))
+    tarball = joinpath(static_dir, "registry", uuid, registry_hash)
+    make_tarball(registry, tarball)
 
     # 2. generate package tarballs for source codes and artifacts
     packages = isnothing(packages) ? read_packages(registry_root) : packages
@@ -74,7 +73,6 @@ function make_tarball(
             p;
             showvalues = [(:package, pkg.name), (:versions, keys(pkg.versions))],
         )
-        sleep(0.5)
     end
 
     # 3. update registry file
@@ -87,7 +85,7 @@ function make_tarball(
         registries = Dict()
     end
     uuid = reg_data["uuid"]
-    registries[uuid] = "/registry/$uuid/$tree_hash"
+    registries[uuid] = "/registry/$uuid/$registry_hash"
     open(registries_file, write = true) do io
         for (uuid, registry_path) in sort!(collect(registries))
             println(io, registry_path)

@@ -1,5 +1,6 @@
 using Pkg: TOML
 using StorageServer: Package
+using StorageServer: get_registry_path
 using TestImages
 
 let
@@ -8,14 +9,14 @@ static_dir = "static"
 clones_dir = "clones"
 
 uuid = "5e47fb64-e119-507b-a336-dd2b206d9990"
-registry_item_dir = "$(homedir())/.julia/registries/General/T/TestImages"
+registry_item_dir = joinpath(get_registry_path("General"), "T", "TestImages")
 pkg = Package("TestImages.jl", uuid, registry_item_dir)
 
 
-versions_toml = TOML.parse(read(joinpath(registry_item_dir, "Versions.toml"), String))
+versions_toml = TOML.parsefile(joinpath(registry_item_dir, "Versions.toml"))
 versions_sha = Set([item["git-tree-sha1"] for item in values(versions_toml)])
 
-artifacts_toml = TOML.parse(read(joinpath(pkgdir(TestImages), "Artifacts.toml"), String))
+artifacts_toml = TOML.parsefile(joinpath(pkgdir(TestImages), "Artifacts.toml"))
 artifacts_sha = Set([item["git-tree-sha1"] for item in values(artifacts_toml)])
 
 mktempdir() do root_dir

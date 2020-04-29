@@ -33,7 +33,7 @@ function make_tarball(pkg::Package; static_dir = STATIC_DIR, clones_dir = CLONES
 
     # 1. clone repo
     clone_dir = joinpath(clones_dir, pkg.uuid)
-    _clone_repo(pkg.url, clone_dir)
+    _clone_repo(pkg, clone_dir)
 
     # 2. make tarball for each version in the registry
     for (ver, info) in pkg.versions
@@ -56,7 +56,7 @@ function make_tarball(pkg::Package; static_dir = STATIC_DIR, clones_dir = CLONES
     return
 end
 
-function _clone_repo(repo_url, clone_dir)
+function _clone_repo(pkg::Package, clone_dir)
     isdir(clone_dir) && return
 
     timeout_start = time()
@@ -71,13 +71,13 @@ function _clone_repo(repo_url, clone_dir)
     kill_timeout = 60
 
     # TODO: use `LibGit2.clone
-    process = run(`git clone --mirror $repo_url $clone_dir`, wait = false)
+    process = run(`git clone --mirror $(pkg.url) $clone_dir`, wait = false)
     is_clone_failure = false
     while process_running(process)
         elapsed = (time() - timeout_start)
         if elapsed > timeout
             is_clone_failure = true
-            @debug("Terminating cloning $repo_url")
+            @debug("Terminating cloning $(pkg.url)")
             kill(process)
             start_time = time()
             while process_running(process)
@@ -93,8 +93,8 @@ function _clone_repo(repo_url, clone_dir)
 
     if is_clone_failure
         # although `git clone` removes `clone_dir` at failure
-        # manually remove it again as a safe net
+        # here we manually remove it again for safety
         rm(clone_dir, recursive = true, force = true)
-        @error "Cannot clone $name [$uuid]"
+        @error "Cannot clone $(pkg.name) [$(pkg.uuid)]"
     end
 end

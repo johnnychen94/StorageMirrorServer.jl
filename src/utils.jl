@@ -47,8 +47,8 @@ function verify_tarball_hash(tarball, ref_hash::SHA1)
     end
     real_hash == ref_hash || error("""
         tree hash mismatch:
-        - expected: $(ref_hash.bytes)
-        - computed: $(hash.bytes)
+        - expected: $(ref_hash)
+        - computed: $(hash)
         """)
     return true
 end

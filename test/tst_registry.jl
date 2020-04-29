@@ -1,5 +1,5 @@
 let
-# use relative path to generate consistent reference test
+# use relative path to generate consistent test references
 registry_root = joinpath("registries", "Test")
 
 test_full = read_packages(registry_root)

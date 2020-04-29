@@ -4,10 +4,11 @@
 struct GitTree
     repo::GitRepo
     hash::SHA1
-    version::VersionNumber
+    version::Union{VersionNumber, Nothing}
 end
-function GitTree(source_path::AbstractString, hash::AbstractString, version::AbstractString)
-    GitTree(GitRepo(source_path), SHA1(hash), VersionNumber(version))
+function GitTree(source_path::AbstractString, hash::AbstractString, version::Union{AbstractString, Nothing}=nothing)
+    version = isnothing(version) ? version : VersionNumber(version)
+    GitTree(GitRepo(source_path), SHA1(hash), version)
 end
 
 """
