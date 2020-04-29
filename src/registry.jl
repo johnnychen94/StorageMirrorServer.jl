@@ -65,14 +65,9 @@ function make_tarball(
 
     # 2. generate package tarballs for source codes and artifacts
     packages = isnothing(packages) ? read_packages(registry_root) : packages
-    p = Progress(length(packages))
-    @showprogress for pkg in packages
-        make_tarball(pkg; static_dir = static_dir, clones_dir = clones_dir)
-
-        ProgressMeter.next!(
-            p;
-            showvalues = [(:package, pkg.name), (:versions, keys(pkg.versions))],
-        )
+    p = Progress(mapreduce(x->length(x.versions), +, packages))
+    for pkg in packages
+        make_tarball(pkg; static_dir = static_dir, clones_dir = clones_dir, progress=p)
     end
 
     # 3. update registry file

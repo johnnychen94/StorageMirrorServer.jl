@@ -9,11 +9,17 @@ struct Package
     url::String
     registry_dir::String
 
-    function Package(name, uuid, registry_dir; latest_versions_num::Union{Nothing, Integer}=nothing)
+    function Package(
+        name,
+        uuid,
+        registry_dir;
+        latest_versions_num::Union{Nothing,Integer} = nothing,
+    )
         versions_info = TOML.parsefile(joinpath(registry_dir, "Versions.toml"))
-        versions = sort!(collect(keys(versions_info)), rev=true, by=VersionNumber)
-        versions = isnothing(latest_versions_num) ? versions : versions[1: min(length(versions), latest_versions_num)]
-        versions_info = Dict(k=>versions_info[k] for k in versions)
+        versions = sort!(collect(keys(versions_info)), rev = true, by = VersionNumber)
+        versions = isnothing(latest_versions_num) ? versions :
+            versions[1:min(length(versions), latest_versions_num)]
+        versions_info = Dict(k => versions_info[k] for k in versions)
 
         pkg_info = TOML.parsefile(joinpath(registry_dir, "Package.toml"))
         url = pkg_info["repo"]
@@ -28,9 +34,12 @@ end
 
 Make tarballs of all versions and artifacts for package `pkg`.
 """
-function make_tarball(pkg::Package; static_dir = STATIC_DIR, clones_dir = CLONES_DIR)
-    # let callers handle the error
-
+function make_tarball(
+    pkg::Package;
+    static_dir = STATIC_DIR,
+    clones_dir = CLONES_DIR,
+    progress::Union{Nothing,Progress} = nothing,
+)
     # 1. clone repo
     clone_dir = joinpath(clones_dir, pkg.uuid)
     try
@@ -52,8 +61,18 @@ function make_tarball(pkg::Package; static_dir = STATIC_DIR, clones_dir = CLONES
         tarball = joinpath(static_dir, pkg.tarball, tree_hash)
 
         try
+            if !isnothing(progress)
+                # although it doesn't get updated if this function return early,
+                # an approximate progress would already be useful enough
+                ProgressMeter.next!(
+                    progress;
+                    showvalues = [(:package, pkg.name), (:version, ver)],
+                )
+            end
+
             make_tarball(tree, tarball; static_dir = static_dir)
         catch err
+            err isa InterruptException && rethrow(err)
             # failing to download resources for a specific version is acceptable
             # but we need to clean things up
             @warn err repo_path = LibGit2.path(tree.repo) tarball = tarball

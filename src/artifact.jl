@@ -60,7 +60,7 @@ function _download(artifact::Artifact)
     for download in artifact.downloads
         url = download["url"]
         hash = download["sha256"]
-        success = download_artifact(artifact.hash, url, hash, verbose = true)
+        success = download_artifact(artifact.hash, url, hash, verbose = false)
         success || error("artifact download failed")
     end
 
