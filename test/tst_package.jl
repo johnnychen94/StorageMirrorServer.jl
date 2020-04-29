@@ -49,7 +49,10 @@ pkg = Package("Atmosphere.jl", uuid, registry_item_dir)
 
 mktempdir() do root_dir
     cd(root_dir) do
-        make_tarball(pkg; static_dir=static_dir, clones_dir=clones_dir)
+        output = @capture_err begin
+            make_tarball(pkg; static_dir=static_dir, clones_dir=clones_dir)
+        end
+        @test occursin("failed to request $(pkg.url)", output)
 
         # failed to clone
         source_dir = joinpath(root_dir, static_dir, "package", uuid)

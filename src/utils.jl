@@ -1,4 +1,4 @@
-const compress(io::IO) = TranscodingStream(GzipCompressor(level=9), io)
+const compress(io::IO) = TranscodingStream(GzipCompressor(level = 9), io)
 const decompress(io::IO) = TranscodingStream(GzipDecompressor(), io)
 
 """
@@ -8,7 +8,7 @@ tar and compress resource `src_path` as `tarball`
 """
 function make_tarball(src_path::AbstractString, tarball::AbstractString)
     mkpath(dirname(tarball))
-    open(tarball, write=true) do io
+    open(tarball, write = true) do io
         close(Tar.create(src_path, compress(io)))
     end
     return tarball
@@ -51,4 +51,21 @@ function verify_tarball_hash(tarball, ref_hash::SHA1)
         - computed: $(hash)
         """)
     return true
+end
+
+# input => output
+# "General" => "/path/to/General/"
+# "/path/to/General/" => "/path/to/General/"
+function get_registry_path(registry::AbstractString)
+    if isdir(registry) && "Registry.toml" in readdir(registry)
+        return registry
+    end
+
+    registries = filter(joinpath.(DEPOT_PATH, "registries", registry)) do path
+        isdir(path) && "Registry.toml" in readdir(path)
+    end
+    if isempty(registries)
+        error("$registry does not exists, try `]registry add $registry` first.")
+    end
+    return first(registries)
 end

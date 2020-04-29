@@ -21,7 +21,7 @@ end
     mktempdir() do download_root
         static_dir = joinpath(download_root, "static")
         cd(download_root) do
-            make_tarball(registry_root; static_dir=static_dir)
+            make_tarball(registry_root; static_dir=static_dir, show_progress=false)
 
             @test isfile(joinpath(static_dir, "registries"))
             registry_dir = joinpath(static_dir, "registry")

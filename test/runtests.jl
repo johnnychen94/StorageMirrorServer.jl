@@ -1,6 +1,6 @@
 using StorageServer
 using Test
-using ReferenceTests
+using Suppressor
 
 @testset "StorageServer.jl" begin
     include("tst_artifact.jl")

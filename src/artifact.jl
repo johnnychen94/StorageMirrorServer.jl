@@ -13,7 +13,6 @@ function Artifact(info::Dict)
     tarball = joinpath("artifact", hash)
     if haskey(info, "download")
         downloads = info["download"]
-        # an artifact may contain multiple files
         downloads isa Vector || (downloads = [downloads])
     else
         downloads = []
@@ -25,15 +24,12 @@ end
     make_tarball(artifact::Artifact; static_dir = STATIC_DIR)
 
 Make a tarball for artifact `artifact` and save to `\$static_dir/artifact/\$hash`.
-
-Making a valid tarball requires a complete artifact saved in
-`\$JULIA_DEPOT_PATH/artifacts/\$hash`.
 """
 function make_tarball(artifact::Artifact; static_dir = STATIC_DIR)
     tarball = joinpath(static_dir, artifact.tarball)
 
-    # an artifact can be used by different package versions or packages
-    # skil downloading if it already exists
+    # an artifact can be used by different package versions or packages,
+    # skip downloading if this artifact already exists
     isfile(tarball) && return
 
     local src_path # the artifact dirpath in JULIA_DEPOT_PATH
@@ -42,7 +38,7 @@ function make_tarball(artifact::Artifact; static_dir = STATIC_DIR)
         make_tarball(src_path, tarball)
         verify_tarball_hash(tarball, artifact.hash)
 
-        # free up spaces?
+        # TODO: free up spaces? -- this may break current depot path
         # rm(src_path, force = true, recursive = true)
     catch err
         @warn err tarball = tarball

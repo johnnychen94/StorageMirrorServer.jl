@@ -4,9 +4,13 @@
 struct GitTree
     repo::GitRepo
     hash::SHA1
-    version::Union{VersionNumber, Nothing}
+    version::Union{VersionNumber,Nothing}
 end
-function GitTree(source_path::AbstractString, hash::AbstractString, version::Union{AbstractString, Nothing}=nothing)
+function GitTree(
+    source_path::AbstractString,
+    hash::AbstractString,
+    version::Union{AbstractString,Nothing} = nothing,
+)
     version = isnothing(version) ? version : VersionNumber(version)
     GitTree(GitRepo(source_path), SHA1(hash), version)
 end
@@ -18,7 +22,7 @@ Checkout and save `tree` as tarballs.
 
 It saves two kinds of tarballs:
 
-* the source code as `\$static_dir/package/\$uuid/\$hash`
+* the source code of current git tree as `\$static_dir/package/\$uuid/\$hash`
 * one or many artifacts as `\$static_dir/artifact/\$hash`
 """
 function make_tarball(tree::GitTree, tarball::AbstractString; static_dir = STATIC_DIR)
@@ -51,22 +55,18 @@ function make_tarball(tree::GitTree, tarball::AbstractString; static_dir = STATI
     end
     for path in paths
         sys_path = joinpath(tmp_dir, path)
-        try
-            artifacts = TOML.parsefile(sys_path)
-            for (key, val) in artifacts
-                if val isa Dict
-                    make_tarball(Artifact(val); static_dir = static_dir)
-                elseif val isa Vector
-                    # e.g., MKL for different platforms
-                    foreach(val) do x
-                        make_tarball(Artifact(x); static_dir = static_dir)
-                    end
-                else
-                    @warn "invalid artifact file entry: $val"
+        artifacts = TOML.parsefile(sys_path)
+        for (key, val) in artifacts
+            if val isa Dict
+                make_tarball(Artifact(val); static_dir = static_dir)
+            elseif val isa Vector
+                # e.g., MKL for different platforms
+                foreach(val) do x
+                    make_tarball(Artifact(x); static_dir = static_dir)
                 end
+            else
+                @warn "invalid artifact file entry: $val"
             end
-        catch err
-            @warn "error processing artifact file" error = err path
         end
     end
     rm(tmp_dir, recursive = true)
