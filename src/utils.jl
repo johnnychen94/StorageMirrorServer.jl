@@ -15,23 +15,6 @@ function make_tarball(src_path::AbstractString, tarball::AbstractString)
 end
 
 """
-    get_tree_paths(root::AbstractString)
-
-Return a list of sorted relative paths for dirs and files in `root`
-"""
-function get_tree_paths(root::AbstractString)
-    paths = String[]
-    for (subroot, dirs, files) in walkdir(root)
-        path = subroot != root ? relpath(subroot, root) : ""
-        for file in [dirs; files]
-            push!(paths, joinpath(path, file))
-        end
-    end
-    sort!(paths)
-    return paths
-end
-
-"""
     verify_tarball_hash(tarball, ref_hash::SHA1)
 
 Verify tarball resource with reference hash `ref_hash`. Throw an error if hashes don't match.
