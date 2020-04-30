@@ -48,7 +48,9 @@ function make_tarball(
     static_dir = STATIC_DIR,
     clones_dir = CLONES_DIR,
 )
-    warn_for_default_depot_path()
+    if is_default_depot_path()
+        @warn "Using default DEPOT_PATH could easily fill up free disk spaces (especially for SSDs). You can set `JULIA_DEPOT_PATH` env before starting julia" DEPOT_PATH
+    end
 
     registry_root = get_registry_path(registry)
     reg_file = joinpath(registry_root, "Registry.toml")

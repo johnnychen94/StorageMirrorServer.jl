@@ -40,14 +40,16 @@ function make_tarball(artifact::Artifact; static_dir = STATIC_DIR)
     # skip downloading if this artifact already exists
     isfile(tarball) && return
 
-    local src_path # the artifact dirpath in JULIA_DEPOT_PATH
+    local src_path # the artifact dirpath in `$(depot_path)/artifact/`
     try
         src_path = _download(artifact)
         make_tarball(src_path, tarball)
         verify_tarball_hash(tarball, artifact.hash)
 
-        # TODO: free up spaces? -- this may break current depot path
-        # rm(src_path, force = true, recursive = true)
+        if !is_default_depot_path()
+            # This could break current depot path; package without artifacts is incomplete.
+            rm(src_path, force = true, recursive = true)
+        end
     catch err
         @warn err tarball = tarball
         @isdefined(src_path) && rm(src_path, force = true, recursive = true)
@@ -69,7 +71,7 @@ function _download(artifact::Artifact)
     end
 
     artifact_dirpath = artifact_path(artifact.hash, honor_overrides = false)
-    isdir(artifact_dirpath) || error("artifact download failed")
+    isdir(artifact_dirpath) || @warn "artifact $(artifact.hash) not generated."
 
     return artifact_dirpath
 end

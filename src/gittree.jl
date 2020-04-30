@@ -26,9 +26,6 @@ It saves two kinds of tarballs:
 * one or many artifacts as `\$static_dir/artifact/\$hash`
 """
 function make_tarball(tree::GitTree, tarball::AbstractString; static_dir = STATIC_DIR)
-    is_new_tarball = !isfile(tarball)
-    is_new_tarball || return nothing
-
     # 1. make tarball for source codes
     try
         mktempdir() do src_path

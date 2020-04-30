@@ -84,9 +84,9 @@ function check_registry(registry::AbstractString)
     is_valid_registry(registry) || error("$registry is not a valid Git registry repo.")
 end
 
-function warn_for_default_depot_path()
-    haskey(ENV, "JULIA_DEPOT_PATH") && return
-    first(DEPOT_PATH) != abspath(homedir(), ".julia") && return
+function is_default_depot_path()
+    haskey(ENV, "JULIA_DEPOT_PATH") && return false
+    first(DEPOT_PATH) != abspath(homedir(), ".julia") && return false
 
-    @warn "Using default DEPOT_PATH could easily fill up free disk spaces (especially for SSDs). You can set `JULIA_DEPOT_PATH` env before starting julia" DEPOT_PATH
+    return true
 end
