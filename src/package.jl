@@ -166,10 +166,18 @@ Kerword arguments:
 
 # Examples
 
+List all packages:
+
 ```julia
-    pkgs = read_packages(general) do pkg
-        occursin("JuliaImages", pkg.url)
-    end
+pkgs = read_packages("General")
+```
+
+List only packages under JuliaArrays:
+
+```julia
+pkgs = read_packages("General") do pkg
+    occursin("JuliaArrays", pkg.url)
+end
 ```
 """
 function read_packages(
