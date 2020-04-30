@@ -10,36 +10,16 @@ TL;DR; A storage server contains all the static contents you need to download wh
 
 To set up a storage server, you'll need to:
 
-1. get the static contents
+1. get/update the static contents
 2. serve them as a HTTP(s) service using nginx or whatever you like
-3. set up a cron job to get regular update
 
-This package is used to make "1. get the static contents" easy and stupid.
+This package is written to make step 1 easy and stupid.
 
 # Build from scratch
 
-The following is the minimal codes you need to build static contents from scratch. It will creates
-two folders in current folder:
+See the [example script](examples/gen_static_full.example.jl) for how to build the data from scratch.
 
-* `static` holds all the data you need to set up a HTTP service.
-* `clones` contains all git repositories of packages. It will be used in next round of update
-(usually a cron job), so there's no need to remove it.
-
-```julia
-using StorageServer
-using Pkg
-
-# By default, artifacts are first downloaded to $HOME/.julia/artifacts
-# Keeping all downloaded artifacts could easily consume TB level of disk spaces,
-# so it's recommended to switch to a folder with enough disk spaces.
-# An alternative is to set `JULIA_DEPOT_PATH` env before starting julia
-const DEPOT_DIR = abspath("depot")
-pushfirst!(DEPOT_PATH, DEPOT_DIR)
-
-Pkg.update()
-
-make_tarball("General")
-```
+# Serve only a subset
 
 > if the service serves a registry, it can serve all package versions referenced by that registry;
 > if it serves a package version, it can serve all artifacts used by that package.
