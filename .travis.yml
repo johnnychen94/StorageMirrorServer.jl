@@ -12,6 +12,13 @@ matrix:
   fast_finish: true
 notifications:
   email: false
+
+# To build tarball for General, it needs to be a git repository
+script:
+  - git clone https://github.com/JuliaRegistries/General.git ~/.julia/registries/General
+  - julia --color=yes -e "using Pkg; Pkg.build(verbose=true)"
+  - julia --color=yes -e "using Pkg; Pkg.test(coverage=true)"
+
 after_success:
   - julia -e 'using Pkg; Pkg.add("Coverage"); using Coverage; Codecov.submit(process_folder())'
   - julia -e 'using Pkg; Pkg.add("Coverage"); using Coverage; Coveralls.submit(process_folder())'

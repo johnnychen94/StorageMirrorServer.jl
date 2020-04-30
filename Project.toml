@@ -1,13 +1,31 @@
 name = "StorageServer"
 uuid = "c599abfa-5b8f-4a17-b52a-f0b922b74a91"
-authors = ["Johnny Chen"]
+authors = ["Stefan Karpinski <stefan@karpinski.org>", "Johnny Chen <johnnychen94@hotmail.com>"]
 version = "0.1.0"
 
+[deps]
+CodecZlib = "944b1d66-785c-5afd-91f1-9de20f533193"
+Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
+HTTP = "cd3eb016-35fb-5094-929b-558a96fad6f3"
+LibGit2 = "76f85450-5226-5b5a-8eaa-529ad045b433"
+Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
+ProgressMeter = "92933f4c-e287-5a05-a399-4b506db050ca"
+Tar = "a4e569a6-e804-4fa4-b0f3-eef7a1d5b13e"
+TranscodingStreams = "3bb67fe8-82b1-5028-8e26-92a6c54297fa"
+
 [compat]
-julia = "1.3"
+CodecZlib = "0.7"
+FFTW_jll = "= 3.3.9"
+HTTP = "0.8.14"
+ProgressMeter = "1"
+Tar = "1.3"
+TranscodingStreams = "0.9.5"
+julia = "1.4"
 
 [extras]
+FFTW_jll = "f5851436-0d7a-5f13-b9de-f02708fd171a"
+Suppressor = "fd094767-a336-5f1f-9728-57cf17d0bbfb"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["Test"]
+test = ["Suppressor", "Test", "FFTW_jll"]
