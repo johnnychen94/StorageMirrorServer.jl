@@ -72,7 +72,13 @@ function make_tarball(
         make_tarball(pkg; static_dir = static_dir, clones_dir = clones_dir, progress = p)
     end
 
-    return nothing
+    # clean downloaded cache in tempdir
+    foreach(readdir(tempdir(), join = true)) do path
+        if isfile(path) && !isnothing(match(r"jl_(.*)-download\.\w*(\.sha256)?", path))
+            rm(path; force = true)
+        end
+    end
+    return static_dir
 end
 
 # update `/registries` file
