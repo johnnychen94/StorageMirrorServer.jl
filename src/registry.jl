@@ -63,12 +63,6 @@ function make_tarball(
     uuid = reg_data["uuid"]
     tarball = joinpath(static_dir, "registry", uuid, registry_hash)
     make_tarball(registry, tarball)
-    update_registries(reg_data["uuid"], registry_hash; static_dir = STATIC_DIR)
-
-    # So far the contents in static_dir already make a valid storage server
-    # then we gradually downloads and build all needed tarballs while serving the contents.
-    # However, this requires pkg client support multiple pkg servers, otherwise, it might give
-    # up too quickly to use the fallback solution.
 
     # 2. generate package tarballs for source codes and artifacts
     packages = isnothing(packages) ? read_packages(registry_root) : packages
@@ -76,6 +70,9 @@ function make_tarball(
     Threads.@threads for pkg in packages
         make_tarball(pkg; static_dir = static_dir, clones_dir = clones_dir, progress = p)
     end
+
+    # update /registries to tell pkg server the current version is now ready
+    update_registries(reg_data["uuid"], registry_hash; static_dir = STATIC_DIR)
 
     # clean downloaded cache in tempdir
     foreach(readdir(tempdir(), join = true)) do path
