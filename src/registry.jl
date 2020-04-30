@@ -48,11 +48,14 @@ function make_tarball(
     static_dir = STATIC_DIR,
     clones_dir = CLONES_DIR,
 )
+    warn_for_default_depot_path()
+
     registry_root = get_registry_path(registry)
     reg_file = joinpath(registry_root, "Registry.toml")
     reg_data = TOML.parsefile(reg_file)
 
     # 1. generate registry tarball
+    check_registry(registry_root)
     registry_hash = readchomp(`git -C $registry_root rev-parse 'HEAD^{tree}'`)
     registry = GitTree(registry_root, registry_hash)
     uuid = reg_data["uuid"]

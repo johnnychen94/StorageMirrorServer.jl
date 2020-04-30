@@ -57,15 +57,36 @@ end
 # "General" => "/path/to/General/"
 # "/path/to/General/" => "/path/to/General/"
 function get_registry_path(registry::AbstractString)
-    if isdir(registry) && "Registry.toml" in readdir(registry)
-        return registry
-    end
+    is_valid_registry(registry) && return registry
 
-    registries = filter(joinpath.(DEPOT_PATH, "registries", registry)) do path
-        isdir(path) && "Registry.toml" in readdir(path)
-    end
+    registries = filter(is_valid_registry, joinpath.(DEPOT_PATH, "registries", registry))
     if isempty(registries)
         error("$registry does not exists, try `]registry add $registry` first.")
     end
     return first(registries)
+end
+
+function is_valid_registry(registry::AbstractString)
+    isdir(registry) || return false
+    "Registry.toml" in readdir(registry) || return false
+
+    # To fetch the hash of the current registry, it needs to be a git repo
+    try
+        GitRepo(registry)
+    catch err
+        err isa LibGit2.GitError && return false
+        rethrow(err)
+    end
+    return true
+end
+
+function check_registry(registry::AbstractString)
+    is_valid_registry(registry) || error("$registry is not a valid Git registry repo.")
+end
+
+function warn_for_default_depot_path()
+    haskey(ENV, "JULIA_DEPOT_PATH") && return
+    first(DEPOT_PATH) != abspath(homedir(), ".julia") && return
+
+    @warn "Using default DEPOT_PATH could easily fill up free disk spaces (especially for SSDs). You can set `JULIA_DEPOT_PATH` env before starting julia" DEPOT_PATH
 end
