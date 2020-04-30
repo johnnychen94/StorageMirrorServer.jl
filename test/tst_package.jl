@@ -1,23 +1,23 @@
 using Pkg: TOML
 using StorageServer: Package
 using StorageServer: get_registry_path
-using TestImages
+using FFTW_jll
 
 let
-# TestImages.jl
+# FFTW_jll
 static_dir = "static"
 clones_dir = "clones"
 
-uuid = "5e47fb64-e119-507b-a336-dd2b206d9990"
-registry_item_dir = joinpath(get_registry_path("General"), "T", "TestImages")
-pkg = Package("TestImages.jl", uuid, registry_item_dir)
+uuid = "f5851436-0d7a-5f13-b9de-f02708fd171a"
+registry_item_dir = joinpath(tmp_registry_root, "F", "FFTW_jll")
+pkg = Package("FFTW_jll", uuid, registry_item_dir)
 
 
 versions_toml = TOML.parsefile(joinpath(registry_item_dir, "Versions.toml"))
 versions_sha = Set([item["git-tree-sha1"] for item in values(versions_toml)])
 
-artifacts_toml = TOML.parsefile(joinpath(pkgdir(TestImages), "Artifacts.toml"))
-artifacts_sha = Set([item["git-tree-sha1"] for item in values(artifacts_toml)])
+artifacts_toml = TOML.parsefile(joinpath(pkgdir(FFTW_jll), "Artifacts.toml"))
+artifacts_sha = Set([item["git-tree-sha1"] for item in values(artifacts_toml["FFTW"])])
 
 mktempdir() do root_dir
     cd(root_dir) do
@@ -28,10 +28,9 @@ mktempdir() do root_dir
         @test isdir(source_dir)
         isdir(source_dir) && @test Set(readdir(source_dir)) == versions_sha
 
-        # test if all artifacts of the latest version are archived
-        # the latest version is added during CI
+        # test if all artifacts are archived
         artifacts_dir = joinpath(root_dir, static_dir, "artifact")
-        @test Set(readdir(artifacts_dir)) ⊇ artifacts_sha
+        @test Set(readdir(artifacts_dir)) == artifacts_sha
     end
 end
 end

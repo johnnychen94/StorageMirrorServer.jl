@@ -1,17 +1,12 @@
-mktempdir() do tmp_root
-
-registry_root = joinpath(tmp_root, "registries", "Test")
-run(`git clone https://github.com/johnnychen94/Test $registry_root`)
-
 @testset "read_packages" begin
-    test_full = read_packages(registry_root)
+    test_full = read_packages(tmp_registry_root)
     @test length(test_full) == 5
 
-    test_one_version = read_packages(registry_root, latest_versions_num=1)
+    test_one_version = read_packages(tmp_registry_root, latest_versions_num=1)
     @test length(test_one_version) == 5
     @test length(first(test_one_version).versions) == 1
 
-    test_selected_package = read_packages(registry_root) do pkg
+    test_selected_package = read_packages(tmp_registry_root) do pkg
         occursin("FFTW", pkg.url)
     end
     @test length(test_selected_package) == 3
@@ -21,7 +16,7 @@ end
     mktempdir() do download_root
         static_dir = joinpath(download_root, "static")
         cd(download_root) do
-            make_tarball(registry_root; static_dir=static_dir, show_progress=false)
+            make_tarball(tmp_registry_root; static_dir=static_dir, show_progress=false)
 
             @test isfile(joinpath(static_dir, "registries"))
             registry_dir = joinpath(static_dir, "registry")
@@ -37,5 +32,4 @@ end
             isdir(artifact_dir) && @test length(readdir(artifact_dir)) == 13
         end
     end
-end
 end

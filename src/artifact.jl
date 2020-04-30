@@ -8,7 +8,7 @@ struct Artifact
     downloads::Vector
 end
 
-function artifact(info::Dict)
+function Artifact(info::Dict)
     hash = info["git-tree-sha1"]
     tarball = joinpath("artifact", hash)
     if haskey(info, "download")
@@ -22,9 +22,10 @@ end
 
 function artifact_no_throw(args...)
     try
-        artifact(args...)
+        return Artifact(args...)
     catch err
         @warn err
+        return nothing
     end
 end
 
@@ -56,6 +57,7 @@ function make_tarball(artifact::Artifact; static_dir = STATIC_DIR)
         rm(tarball, force = true)
     end
 end
+make_tarball(::Nothing; kwargs...) = nothing
 
 # This is a no-op if the package doesn't provide any download link for its artifacts.
 # It is okay if the artifacts are downloaded during build stage, otherwise, those artifacts

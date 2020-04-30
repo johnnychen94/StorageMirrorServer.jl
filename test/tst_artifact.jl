@@ -40,16 +40,23 @@ end
 let
 mktempdir() do static_dir
     artifact = """
-    ["autumn_leaves.png"]
-    git-tree-sha1 = "cb84c2e2544f3517847d90c13cc11ab911fdbc5c"
+    [[FFTW]]
+    arch = "aarch64"
+    git-tree-sha1 = "cf77334a792d1bbf348c1a2934309828f6cb9742"
+    libc = "musl"
+    os = "linux"
+
+        [[FFTW.download]]
+        sha256 = "6d1741b3183b1dcb9099ac50653a2bb126fee96d7ae7e3cb73d511cfff122cfd"
+        url = "https://github.com/JuliaBinaryWrappers/FFTW_jll.jl/releases/download/FFTW-v3.3.9+5/FFTW.v3.3.9.aarch64-linux-musl.tar.gz"
     """
 
-    artifact = Artifact(TOML.parse(artifact)["autumn_leaves.png"])
+    artifact = Artifact(TOML.parse(artifact)["FFTW"][1])
 
-    sha1_str = "cb84c2e2544f3517847d90c13cc11ab911fdbc5c"
+    sha1_str = "cf77334a792d1bbf348c1a2934309828f6cb9742"
     @test artifact.hash == SHA1(sha1_str)
     @test artifact.tarball == "artifact/$sha1_str"
-    @test length(artifact.downloads) == 0
+    @test length(artifact.downloads) == 1
 
     cd(static_dir) do
         @test isempty(readdir(static_dir))
