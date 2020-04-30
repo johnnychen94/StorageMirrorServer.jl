@@ -8,7 +8,7 @@ struct Artifact
     downloads::Vector
 end
 
-function Artifact(info::Dict)
+function artifact(info::Dict)
     hash = info["git-tree-sha1"]
     tarball = joinpath("artifact", hash)
     if haskey(info, "download")
@@ -17,7 +17,15 @@ function Artifact(info::Dict)
     else
         downloads = []
     end
-    Artifact(SHA1(hash), tarball, downloads)
+    return Artifact(SHA1(hash), tarball, downloads)
+end
+
+function artifact_no_throw(args...)
+    try
+        artifact(args...)
+    catch err
+        @warn err
+    end
 end
 
 """

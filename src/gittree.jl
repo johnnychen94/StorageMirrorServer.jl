@@ -56,16 +56,18 @@ function make_tarball(tree::GitTree, tarball::AbstractString; static_dir = STATI
     for path in paths
         sys_path = joinpath(tmp_dir, path)
         artifacts = TOML.parsefile(sys_path)
-        for (key, val) in artifacts
-            if val isa Dict
-                make_tarball(Artifact(val); static_dir = static_dir)
-            elseif val isa Vector
+        for (key, artifact_info) in artifacts
+            # Use non-throw version `artifact_no_throw` because we don't have control of
+            # what Artifact.toml could be in each repository.
+            if artifact_info isa Dict
+                make_tarball(artifact_no_throw(artifact_info); static_dir = static_dir)
+            elseif artifact_info isa Vector
                 # e.g., MKL for different platforms
-                foreach(val) do x
-                    make_tarball(Artifact(x); static_dir = static_dir)
+                foreach(artifact_info) do x
+                    make_tarball(artifact_no_throw(x); static_dir = static_dir)
                 end
             else
-                @warn "invalid artifact file entry: $val"
+                @warn "invalid artifact file entry: $(artifact_info)"
             end
         end
     end
