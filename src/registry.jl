@@ -68,7 +68,7 @@ function make_tarball(
     # 2. generate package tarballs for source codes and artifacts
     packages = isnothing(packages) ? read_packages(registry_root) : packages
     p = show_progress ? Progress(mapreduce(x -> length(x.versions), +, packages)) : nothing
-    for pkg in packages
+    Threads.@threads for pkg in packages
         make_tarball(pkg; static_dir = static_dir, clones_dir = clones_dir, progress = p)
     end
 
