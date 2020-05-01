@@ -35,6 +35,7 @@ function verify_tarball_hash(tarball, ref_hash::SHA1)
         """)
     return true
 end
+verify_tarball_hash(tarball, ref_hash::AbstractString) = verify_tarball_hash(tarball, SHA1(ref_hash))
 
 # input => output
 # "General" => "/path/to/General/"

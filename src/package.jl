@@ -47,6 +47,7 @@ Make tarballs for all versions and artifacts of package `pkg`.
 """
 function make_tarball(
     pkg::Package;
+    upstream::Union{AbstractString,Nothing} = nothing,
     static_dir = STATIC_DIR,
     clones_dir = CLONES_DIR,
     progress::Union{Nothing,Progress} = nothing,
@@ -68,7 +69,7 @@ function make_tarball(
     for (ver, info) in pkg.versions
         tree_hash = info["git-tree-sha1"]
 
-        tree = GitTree(clone_dir, tree_hash, ver)
+        tree = GitTree(clone_dir, pkg.uuid, tree_hash, ver)
         tarball = joinpath(static_dir, pkg.tarball, tree_hash)
 
         try
@@ -81,7 +82,7 @@ function make_tarball(
                 )
             end
 
-            make_tarball(tree, tarball; static_dir = static_dir)
+            make_tarball(tree, tarball; static_dir = static_dir, upstream=upstream)
 
             @info "$(now())\t$(pkg.name)@$(ver)"
         catch err

@@ -34,12 +34,20 @@ end
 
 Make a tarball for artifact `artifact` and save to `\$static_dir/artifact/\$hash`.
 """
-function make_tarball(artifact::Artifact; static_dir = STATIC_DIR)
+function make_tarball(
+    artifact::Artifact;
+    static_dir = STATIC_DIR,
+    upstream::Union{AbstractString,Nothing} = nothing,
+)
     tarball = joinpath(static_dir, artifact.tarball)
 
     # an artifact can be used by different package versions or packages,
     # skip downloading if this artifact already exists
     isfile(tarball) && return
+
+    resource = "/artifact/$(artifact.hash)"
+    download_and_verify(upstream, resource, tarball) && return
+    @debug "build tarball from scratch" server = upstream resource = resource
 
     local src_path # the artifact dirpath in `$(depot_path)/artifact/`
     try
@@ -52,9 +60,13 @@ function make_tarball(artifact::Artifact; static_dir = STATIC_DIR)
             rm(src_path, force = true, recursive = true)
         end
     catch err
-        @warn err tarball = tarball
         @isdefined(src_path) && rm(src_path, force = true, recursive = true)
         rm(tarball, force = true)
+        if err isa InterruptException
+            rethrow(err)
+        else
+            @warn err tarball = tarball
+        end
     end
 end
 make_tarball(::Nothing; kwargs...) = nothing

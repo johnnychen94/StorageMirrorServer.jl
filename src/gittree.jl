@@ -3,16 +3,19 @@
 """
 struct GitTree
     repo::GitRepo
+    uuid::String
     hash::SHA1
+    # registries don't have version info
     version::Union{VersionNumber,Nothing}
 end
 function GitTree(
     source_path::AbstractString,
+    uuid::AbstractString,
     hash::AbstractString,
     version::Union{AbstractString,Nothing} = nothing,
 )
     version = isnothing(version) ? version : VersionNumber(version)
-    GitTree(GitRepo(source_path), SHA1(hash), version)
+    GitTree(GitRepo(source_path), uuid, SHA1(hash), version)
 end
 
 """
@@ -25,16 +28,27 @@ It saves two kinds of tarballs:
 * the source code of current git tree as `\$static_dir/package/\$uuid/\$hash`
 * one or many artifacts as `\$static_dir/artifact/\$hash`
 """
-function make_tarball(tree::GitTree, tarball::AbstractString; static_dir = STATIC_DIR)
+function make_tarball(
+    tree::GitTree,
+    tarball::AbstractString;
+    static_dir = STATIC_DIR,
+    upstream::Union{AbstractString,Nothing} = nothing,
+)
     # 1. make tarball for source codes
+    prefix = isnothing(tree.version) ? "registry" : "package"
+    resource = "/$prefix/$(tree.uuid)/$(tree.hash)"
+
     try
-        mktempdir() do src_path
-            _checkout_tree(tree, src_path)
-            make_tarball(src_path, tarball)
-            verify_tarball_hash(tarball, tree.hash)
+        if !download_and_verify(upstream, resource, tarball)
+            @debug "build tarball from scratch" server = upstream resource = resource
+            mktempdir() do src_path
+                _checkout_tree(tree, src_path)
+                make_tarball(src_path, tarball)
+                verify_tarball_hash(tarball, tree.hash)
+            end
         end
     catch err
-        @warn "Cannot checkout $(tree.version)"
+        @warn "Cannot checkout $(tree.version)" err
         return nothing
     end
 
@@ -57,11 +71,19 @@ function make_tarball(tree::GitTree, tarball::AbstractString; static_dir = STATI
             # Use non-throw version `artifact_no_throw` because we don't have control of
             # what Artifact.toml could be in each repository.
             if artifact_info isa Dict
-                make_tarball(artifact_no_throw(artifact_info); static_dir = static_dir)
+                make_tarball(
+                    artifact_no_throw(artifact_info);
+                    static_dir = static_dir,
+                    upstream = upstream,
+                )
             elseif artifact_info isa Vector
                 # e.g., MKL for different platforms
                 foreach(artifact_info) do x
-                    make_tarball(artifact_no_throw(x); static_dir = static_dir)
+                    make_tarball(
+                        artifact_no_throw(x);
+                        static_dir = static_dir,
+                        upstream = upstream,
+                    )
                 end
             else
                 @warn "invalid artifact file entry: $(artifact_info)"
