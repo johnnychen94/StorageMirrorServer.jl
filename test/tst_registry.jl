@@ -13,23 +13,28 @@
 end
 
 @testset "make_tarball" begin
-    mktempdir() do download_root
-        static_dir = joinpath(download_root, "static")
-        cd(download_root) do
-            make_tarball(tmp_registry_root; static_dir=static_dir, show_progress=false)
+    function test_make_tarball_registry(upstream)
+        mktempdir() do download_root
+            static_dir = joinpath(download_root, "static")
+            cd(download_root) do
+                make_tarball(tmp_registry_root; static_dir=static_dir, show_progress=false)
 
-            @test isfile(joinpath(static_dir, "registries"))
-            registry_dir = joinpath(static_dir, "registry")
-            @test isdir(registry_dir)
-            isdir(registry_dir) && @test length(readdir(registry_dir)) == 1
+                @test isfile(joinpath(static_dir, "registries"))
+                registry_dir = joinpath(static_dir, "registry")
+                @test isdir(registry_dir)
+                isdir(registry_dir) && @test length(readdir(registry_dir)) == 1
 
-            pkg_dir = joinpath(static_dir, "package")
-            @test isdir(pkg_dir)
-            isdir(pkg_dir) && @test length(readdir(pkg_dir)) == 5
+                pkg_dir = joinpath(static_dir, "package")
+                @test isdir(pkg_dir)
+                isdir(pkg_dir) && @test length(readdir(pkg_dir)) == 5
 
-            artifact_dir = joinpath(static_dir, "artifact")
-            @test isdir(artifact_dir)
-            isdir(artifact_dir) && @test length(readdir(artifact_dir)) == 13
+                artifact_dir = joinpath(static_dir, "artifact")
+                @test isdir(artifact_dir)
+                isdir(artifact_dir) && @test length(readdir(artifact_dir)) == 13
+            end
         end
     end
+
+    test_make_tarball_registry(nothing)
+    test_make_tarball_registry("pkg.julialang.org")
 end

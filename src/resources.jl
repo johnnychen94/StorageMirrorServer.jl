@@ -1,50 +1,6 @@
 # Modified from PkgServer.jl
 # https://github.com/JuliaPackaging/PkgServer.jl/blob/ff2ed7bf179689b3b985ad268b986e53801aaea5/src/PkgServer.jl
 
-const REGISTRIES = Dict(
-    "23338594-aafe-5451-b93e-139f81909106" =>
-        "https://github.com/JuliaRegistries/General",
-)
-
-const uuid_re = raw"[0-9a-z]{8}-[0-9a-z]{4}-[0-9a-z]{4}-[0-9a-z]{4}-[0-9a-z]{12}(?-i)"
-const hash_re = raw"[0-9a-f]{40}"
-const meta_re     = Regex("^/meta\$")
-const registry_re = Regex("^/registry/($uuid_re)/($hash_re)\$")
-const resource_re = Regex("""
-    ^/registries\$
-  | ^/registry/$uuid_re/$hash_re\$
-  | ^/package/$uuid_re/$hash_re\$
-  | ^/artifact/$hash_re\$
-""", "x")
-const hash_part_re = Regex("/($hash_re)\$")
-
-function get_registries(server::String)
-    regs = Dict{String,String}()
-    response = HTTP.get("$server/registries")
-    for line in eachline(IOBuffer(response.body))
-        m = match(registry_re, line)
-        if m !== nothing
-            uuid, hash = m.captures
-            uuid in keys(REGISTRIES) || continue
-            regs[uuid] = hash
-        else
-            @error "invalid response" server=server resource="/registries" line=line
-        end
-    end
-    return regs
-end
-
-# priority: upstream::AbstractString > JULIA_PKG_SERVER > nothing
-function get_upstream(upstream::AbstractString)
-    startswith(upstream, r"\w+://") || (upstream = "https://$upstream")
-    return String(rstrip(upstream, '/'))
-end
-function get_upstream(upstream::Nothing=nothing)
-    upstream = get(ENV, "JULIA_PKG_SERVER", nothing)
-    return isnothing(upstream) ? nothing : get_upstream(upstream)
-end
-
-
 """
     write_atomic(f::Function, path::String)
 Performs an atomic filesystem write by writing out to a file on the same
@@ -71,7 +27,7 @@ end
 
 download_and_verify(::Nothing, resource, path) = false
 function download_and_verify(server::String, resource::String, path::String)
-    hash = let m = match(hash_part_re, resource)
+    hash = let m = match(Regex("/([0-9a-f]{40})\$"), resource)
         m !== nothing ? m.captures[1] : nothing
     end
 
