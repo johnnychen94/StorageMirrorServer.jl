@@ -69,18 +69,6 @@ function write_atomic(f::Function, path::String)
     end
 end
 
-function tarball_git_hash(tarball::String)
-    local tree_hash
-    mktempdir() do tmp_dir
-        open(tarball) do io
-            Tar.extract(decompress(io), tmp_dir)
-        end
-        tree_hash = bytes2hex(Pkg.GitTools.tree_hash(tmp_dir))
-        chmod(tmp_dir, 0o777, recursive = true) # useless ?
-    end
-    return tree_hash
-end
-
 download_and_verify(::Nothing, resource, path) = false
 function download_and_verify(server::String, resource::String, path::String)
     hash = let m = match(hash_part_re, resource)
@@ -92,8 +80,9 @@ function download_and_verify(server::String, resource::String, path::String)
         return false
     end
 
-    # Instead of verifying hash, which requires a lot of IO reads, a faster way is to
-    # make sure the file isn't created if download/creation of tarball fails
+    # Verifying hash requires a lot of IO reads. A faster way is to only check if the file
+    # exists. This is okay if we can make sure the file isn't created when download/creation
+    # of tarball fails
     isfile(path) && return true
 
     write_atomic(path) do temp_file, io

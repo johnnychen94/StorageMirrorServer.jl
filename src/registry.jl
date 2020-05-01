@@ -80,7 +80,7 @@ function make_tarball(
     end
 
     # update /registries to tell pkg server the current version is now ready
-    update_registries(uuid, registry_hash; static_dir = STATIC_DIR)
+    update_registries(uuid, registry_hash; static_dir = static_dir)
 
     # clean downloaded cache in tempdir
     foreach(readdir(tempdir(), join = true)) do path
