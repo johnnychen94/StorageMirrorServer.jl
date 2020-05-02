@@ -1,7 +1,7 @@
 """
     make_tarball(registry::AbstractString;
                  packages::Union{Nothing, AbstractVector{Package}} = nothing,
-                 upstream::Union{Nothing, AbstractString} = nothing,
+                 upstreams::AbstractVector = [],
                  show_progress = true,
                  static_dir = STATIC_DIR,
                  clones_dir = CLONES_DIR)
@@ -20,8 +20,7 @@ After building, all static content data are saved to `static_dir`:
 
 - `packages::Vector{Package}` (Optional): If is provided, it only pulls data specified by
   `packages`. This list can be built using [`read_packages`](@ref).
-- `upstream::AbstractString` (Optional): If specified or if `JULIA_PKG_SERVER` is set,
-  it would try to download tarballs from the upstream pkg/storage server.
+- `upstreams`: It would try to download tarballs from the upstream pkg/storage server first.
   If upstream server doesn't have that, it would build the data from scratch.
 - `show_progress::Bool`: `true` to show an additional progress meter. By default it is `true`.
 - 'static_dir::String': where all static contents are saved to. By default it is "static".
@@ -48,13 +47,13 @@ make_tarball(registry; packages = pkgs)
 function make_tarball(
     registry::AbstractString;
     packages::Union{AbstractVector{Package},Nothing} = nothing,
-    upstream::Union{AbstractString,Nothing} = nothing,
+    upstreams::AbstractVector = [],
     show_progress = true,
     static_dir = STATIC_DIR,
     clones_dir = CLONES_DIR,
 )
-    upstream = get_upstream(upstream)
-    isnothing(upstream) || @info "set mirroring upstream" upstream
+    upstreams = get_upstream.(upstreams)
+    isempty(upstreams) || @info "use available mirroring upstreams" upstreams
 
     if is_default_depot_path()
         @warn "Using default DEPOT_PATH could easily fill up free disk spaces (especially for SSDs). You can set `JULIA_DEPOT_PATH` env before starting julia" DEPOT_PATH
@@ -70,13 +69,13 @@ function make_tarball(
     uuid = reg_data["uuid"]
     registry = GitTree(registry_root, uuid, registry_hash)
     tarball = joinpath(static_dir, "registry", uuid, registry_hash)
-    make_tarball(registry, tarball; static_dir = static_dir, upstream = upstream)
+    make_tarball(registry, tarball; static_dir = static_dir, upstreams = upstreams)
 
     # 2. generate package tarballs for source codes and artifacts
     packages = isnothing(packages) ? read_packages(registry_root) : packages
     p = show_progress ? Progress(mapreduce(x -> length(x.versions), +, packages)) : nothing
     Threads.@threads for pkg in packages
-        make_tarball(pkg; static_dir = static_dir, clones_dir = clones_dir, upstream=upstream, progress = p)
+        make_tarball(pkg; static_dir = static_dir, clones_dir = clones_dir, upstreams=upstreams, progress = p)
     end
 
     # update /registries to tell pkg server the current version is now ready

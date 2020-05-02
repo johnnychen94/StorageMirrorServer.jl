@@ -32,15 +32,14 @@ function make_tarball(
     tree::GitTree,
     tarball::AbstractString;
     static_dir = STATIC_DIR,
-    upstream::Union{AbstractString,Nothing} = nothing,
+    upstreams::AbstractVector = [],
 )
     # 1. make tarball for source codes
     prefix = isnothing(tree.version) ? "registry" : "package"
     resource = "/$prefix/$(tree.uuid)/$(tree.hash)"
 
     try
-        if !download_and_verify(upstream, resource, tarball)
-            @debug "build tarball from scratch" server = upstream resource = resource
+        if !any(x->download_and_verify(x, resource, tarball), upstreams)
             mktempdir() do src_path
                 _checkout_tree(tree, src_path)
                 make_tarball(src_path, tarball)
@@ -74,7 +73,7 @@ function make_tarball(
                 make_tarball(
                     artifact_no_throw(artifact_info);
                     static_dir = static_dir,
-                    upstream = upstream,
+                    upstreams = upstreams,
                 )
             elseif artifact_info isa Vector
                 # e.g., MKL for different platforms
@@ -82,7 +81,7 @@ function make_tarball(
                     make_tarball(
                         artifact_no_throw(x);
                         static_dir = static_dir,
-                        upstream = upstream,
+                        upstreams = upstreams,
                     )
                 end
             else

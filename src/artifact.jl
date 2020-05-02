@@ -37,7 +37,7 @@ Make a tarball for artifact `artifact` and save to `\$static_dir/artifact/\$hash
 function make_tarball(
     artifact::Artifact;
     static_dir = STATIC_DIR,
-    upstream::Union{AbstractString,Nothing} = nothing,
+    upstreams::AbstractVector = [],
 )
     tarball = joinpath(static_dir, artifact.tarball)
 
@@ -46,8 +46,7 @@ function make_tarball(
     isfile(tarball) && return
 
     resource = "/artifact/$(artifact.hash)"
-    download_and_verify(upstream, resource, tarball) && return
-    @debug "build tarball from scratch" server = upstream resource = resource
+    any(x->download_and_verify(x, resource, tarball), upstreams) && return
 
     local src_path # the artifact dirpath in `$(depot_path)/artifact/`
     try

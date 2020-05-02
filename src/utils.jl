@@ -41,14 +41,9 @@ function verify_tarball_hash(tarball, ref_hash::SHA1)
 end
 verify_tarball_hash(tarball, ref_hash::AbstractString) = verify_tarball_hash(tarball, SHA1(ref_hash))
 
-# priority: upstream::AbstractString > JULIA_PKG_SERVER > nothing
 function get_upstream(upstream::AbstractString)
     startswith(upstream, r"\w+://") || (upstream = "https://$upstream")
     return String(rstrip(upstream, '/'))
-end
-function get_upstream(upstream::Nothing=nothing)
-    upstream = get(ENV, "JULIA_PKG_SERVER", nothing)
-    return isnothing(upstream) ? nothing : get_upstream(upstream)
 end
 
 # input => output

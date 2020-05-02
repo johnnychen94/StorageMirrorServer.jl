@@ -47,7 +47,7 @@ Make tarballs for all versions and artifacts of package `pkg`.
 """
 function make_tarball(
     pkg::Package;
-    upstream::Union{AbstractString,Nothing} = nothing,
+    upstreams::AbstractVector = [],
     static_dir = STATIC_DIR,
     clones_dir = CLONES_DIR,
     progress::Union{Nothing,Progress} = nothing,
@@ -82,7 +82,7 @@ function make_tarball(
                 )
             end
 
-            make_tarball(tree, tarball; static_dir = static_dir, upstream=upstream)
+            make_tarball(tree, tarball; static_dir = static_dir, upstreams=upstreams)
 
             @info "$(now())\t$(pkg.name)@$(ver)"
         catch err

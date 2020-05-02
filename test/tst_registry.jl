@@ -35,6 +35,6 @@ end
         end
     end
 
-    test_make_tarball_registry(nothing)
-    test_make_tarball_registry("pkg.julialang.org")
+    test_make_tarball_registry([])
+    test_make_tarball_registry(["pkg.julialang.org"])
 end
