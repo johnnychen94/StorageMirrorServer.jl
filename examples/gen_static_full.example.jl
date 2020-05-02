@@ -1,9 +1,9 @@
 # !/usr/bin/env julia
-# This script builds/updates all static contents needed by storage server _from scratch._
+# This script builds/pulls all static contents needed by storage server.
 #
 # Usage:
 #  1. make sure you've added StorageServer.jl
-#  2. generate/update all tarballs: `julia --color=yes gen_static.jl`
+#  2. generate/pull all tarballs: `julia --color=yes gen_static.jl`
 #  3. set a cron job to run step 2 regularly
 #
 # Note:
@@ -30,6 +30,9 @@ pushfirst!(DEPOT_PATH, DEPOT_DIR)
 const STATIC_DIR = "/mnt/mirrors/julia"
 
 # Where git repos of packages are saved to, this can be reused in the next-round update
+# For the usage of storage server, there's no need to serve these from HTTP
 const CLONES_DIR = "/root/StorageServer/clones"
 
-make_tarball("General"; static_dir=STATIC_DIR, clones_dir=CLONES_DIR)
+# only pull/mirror whatever upstream server provides
+upstreams = ["pkg.julialang.org"]
+mirror_tarball("General", upstreams; static_dir = STATIC_DIR, clones_dir = CLONES_DIR)

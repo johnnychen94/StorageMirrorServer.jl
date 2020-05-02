@@ -1,6 +1,7 @@
 module StorageServer
 
 using Base: SHA1
+using Random
 
 using Pkg
 using Pkg: TOML
@@ -22,9 +23,10 @@ using ProgressMeter
 const STATIC_DIR = "static"
 const CLONES_DIR = "clones"
 
-export make_tarball, read_packages
+export make_tarball, mirror_tarball, read_packages
 
 include("utils.jl")
+include("resources.jl") # modified from PkgServer.jl
 
 # a registry has many packages
 # a package has many git trees (versions)

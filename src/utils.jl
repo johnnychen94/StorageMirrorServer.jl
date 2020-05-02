@@ -14,26 +14,36 @@ function make_tarball(src_path::AbstractString, tarball::AbstractString)
     return tarball
 end
 
+function tarball_git_hash(tarball::String)
+    local tree_hash
+    mktempdir() do tmp_dir
+        open(tarball) do io
+            Tar.extract(decompress(io), tmp_dir)
+        end
+        tree_hash = bytes2hex(Pkg.GitTools.tree_hash(tmp_dir))
+        chmod(tmp_dir, 0o777, recursive = true) # useless ?
+    end
+    return tree_hash
+end
+
 """
     verify_tarball_hash(tarball, ref_hash::SHA1)
 
 Verify tarball resource with reference hash `ref_hash`. Throw an error if hashes don't match.
 """
 function verify_tarball_hash(tarball, ref_hash::SHA1)
-    local real_hash
-    mktempdir() do tmp_dir
-        open(tarball) do io
-            Tar.extract(decompress(io), tmp_dir)
-        end
-        real_hash = SHA1(Pkg.GitTools.tree_hash(tmp_dir))
-        chmod(tmp_dir, 0o777, recursive = true) # useless ?
-    end
-    real_hash == ref_hash || error("""
+    SHA1(tarball_git_hash(tarball)) == ref_hash || error("""
         tree hash mismatch:
         - expected: $(ref_hash)
         - computed: $(hash)
         """)
     return true
+end
+verify_tarball_hash(tarball, ref_hash::AbstractString) = verify_tarball_hash(tarball, SHA1(ref_hash))
+
+function get_upstream(upstream::AbstractString)
+    startswith(upstream, r"\w+://") || (upstream = "https://$upstream")
+    return String(rstrip(upstream, '/'))
 end
 
 # input => output

@@ -66,3 +66,12 @@ mktempdir() do static_dir
     end
 end
 end
+
+let
+not_existed = SHA1("180efde45f515a31b6a54cdba84088f4aaad63a1")
+x = Artifact(not_existed, "tmp", [])
+output = @capture_err begin
+    make_tarball(x; download_only=true)
+end
+@test occursin("failed to fetch artifact: $not_existed", output)
+end

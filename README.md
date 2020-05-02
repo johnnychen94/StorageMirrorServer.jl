@@ -15,9 +15,22 @@ To set up a storage server, you'll need to:
 
 This package is written to make step 1 easy and stupid.
 
-# Build from scratch
+# Mirror
 
 See the [example script](examples/gen_static_full.example.jl) for how to build the data from scratch.
+
+```julia
+upstreams = ["pkg.julialang.org"]
+mirror_tarball("General", upstreams; static_dir = STATIC_DIR, clones_dir = CLONES_DIR)
+```
+
+# Build from scratch
+
+Similar to mirror, you only need to change the `mirror_tarball` part to `make_tarball`.
+
+```julia
+make_tarball("General"; static_dir = STATIC_DIR, clones_dir = CLONES_DIR)
+```
 
 # Serve only a subset
 
