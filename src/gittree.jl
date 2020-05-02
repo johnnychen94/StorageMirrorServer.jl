@@ -19,7 +19,10 @@ function GitTree(
 end
 
 """
-    make_tarball(tree::GitTree, tarball; static_dir = STATIC_DIR)
+    make_tarball(tree::GitTree, tarball;
+                 static_dir = STATIC_DIR,
+                 upstreams = [],
+                 download_only = false)
 
 Checkout and save `tree` as tarballs.
 
@@ -33,13 +36,19 @@ function make_tarball(
     tarball::AbstractString;
     static_dir = STATIC_DIR,
     upstreams::AbstractVector = [],
+    download_only = false,
 )
     # 1. make tarball for source codes
-    prefix = isnothing(tree.version) ? "registry" : "package"
-    resource = "/$prefix/$(tree.uuid)/$(tree.hash)"
+    resource = "/package/$(tree.uuid)/$(tree.hash)"
 
     try
-        if !any(x->download_and_verify(x, resource, tarball), upstreams)
+        if !any(x -> download_and_verify(x, resource, tarball), upstreams)
+            if download_only && !isnothing(tree.version)
+                @warn "failed to fetch tarball $resource"
+            end
+
+            # build tarball from scratch
+            # always build tarball for registry
             mktempdir() do src_path
                 _checkout_tree(tree, src_path)
                 make_tarball(src_path, tarball)
@@ -74,6 +83,7 @@ function make_tarball(
                     artifact_no_throw(artifact_info);
                     static_dir = static_dir,
                     upstreams = upstreams,
+                    download_only = download_only,
                 )
             elseif artifact_info isa Vector
                 # e.g., MKL for different platforms
@@ -82,6 +92,7 @@ function make_tarball(
                         artifact_no_throw(x);
                         static_dir = static_dir,
                         upstreams = upstreams,
+                        download_only = download_only,
                     )
                 end
             else

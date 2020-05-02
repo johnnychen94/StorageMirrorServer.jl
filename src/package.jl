@@ -41,13 +41,18 @@ struct Package
 end
 
 """
-    make_tarball(pkg::Package; static_dir=STATIC_DIR, clones_dir = CLONES_DIR)
+    make_tarball(pkg::Package;
+                 static_dir = STATIC_DIR,
+                 clones_dir = CLONES_DIR
+                 upstreams = [],
+                 download_only = false)
 
 Make tarballs for all versions and artifacts of package `pkg`.
 """
 function make_tarball(
     pkg::Package;
     upstreams::AbstractVector = [],
+    download_only = false,
     static_dir = STATIC_DIR,
     clones_dir = CLONES_DIR,
     progress::Union{Nothing,Progress} = nothing,
@@ -82,7 +87,13 @@ function make_tarball(
                 )
             end
 
-            make_tarball(tree, tarball; static_dir = static_dir, upstreams=upstreams)
+            make_tarball(
+                tree,
+                tarball;
+                static_dir = static_dir,
+                upstreams = upstreams,
+                download_only = download_only,
+            )
 
             @info "$(now())\t$(pkg.name)@$(ver)"
         catch err

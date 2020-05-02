@@ -30,7 +30,10 @@ function artifact_no_throw(args...)
 end
 
 """
-    make_tarball(artifact::Artifact; static_dir = STATIC_DIR)
+    make_tarball(artifact::Artifact;
+                 static_dir = STATIC_DIR,
+                 upstreams = [],
+                 download_only = false)
 
 Make a tarball for artifact `artifact` and save to `\$static_dir/artifact/\$hash`.
 """
@@ -38,6 +41,7 @@ function make_tarball(
     artifact::Artifact;
     static_dir = STATIC_DIR,
     upstreams::AbstractVector = [],
+    download_only = false,
 )
     tarball = joinpath(static_dir, artifact.tarball)
 
@@ -46,7 +50,11 @@ function make_tarball(
     isfile(tarball) && return
 
     resource = "/artifact/$(artifact.hash)"
-    any(x->download_and_verify(x, resource, tarball), upstreams) && return
+    any(x -> download_and_verify(x, resource, tarball), upstreams) && return
+    if download_only
+        @warn "failed to fetch artifact: $(artifact.hash)"
+        return nothing
+    end
 
     local src_path # the artifact dirpath in `$(depot_path)/artifact/`
     try
