@@ -3,7 +3,7 @@
 #
 # Usage:
 #  1. make sure you've added StorageServer.jl
-#  2. generate/pull all tarballs: `julia --color=yes gen_static.jl`
+#  2. generate/pull all tarballs: `julia gen_static.jl`
 #  3. set a cron job to run step 2 regularly
 #
 # Note:
