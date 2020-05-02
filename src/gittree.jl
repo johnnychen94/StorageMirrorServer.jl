@@ -1,8 +1,9 @@
 """
-    GitTree(source_path, hash::SHA1)
+    GitTree(source_path, uuid, hash::SHA1, version)
 """
 struct GitTree
     repo::GitRepo
+    clone_dir::String
     uuid::String
     hash::SHA1
     # registries don't have version info
@@ -15,7 +16,7 @@ function GitTree(
     version::Union{AbstractString,Nothing} = nothing,
 )
     version = isnothing(version) ? version : VersionNumber(version)
-    GitTree(GitRepo(source_path), uuid, SHA1(hash), version)
+    GitTree(GitRepo(source_path), source_path, uuid, SHA1(hash), version)
 end
 
 """
@@ -121,7 +122,7 @@ function _checkout_tree(tree::GitTree, target_directory)
         retry || rethrow(err)
 
         retry = false
-        run(`git -C $clone_dir remote update`)
+        run(`git -C $(tree.clone_dir) remote update`)
         @goto again
     end
 end
