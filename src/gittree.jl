@@ -35,7 +35,7 @@ It saves two kinds of tarballs:
 function make_tarball(
     tree::GitTree,
     tarball::AbstractString;
-    static_dir = STATIC_DIR,
+    static_dir = get_static_dir(),
     upstreams::AbstractVector = [],
     download_only = false,
 )

@@ -19,9 +19,8 @@ using HTTP
 using Dates
 using ProgressMeter
 
-
-const STATIC_DIR = "static"
-const CLONES_DIR = "clones"
+get_static_dir() = get(ENV, "JULIA_STATIC_DIR", "static")
+get_clones_dir() = get(ENV, "JULIA_CLONES_DIR", "clones")
 
 export make_tarball, mirror_tarball, read_packages
 

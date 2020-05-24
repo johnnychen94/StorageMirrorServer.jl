@@ -39,7 +39,7 @@ Make a tarball for artifact `artifact` and save to `\$static_dir/artifact/\$hash
 """
 function make_tarball(
     artifact::Artifact;
-    static_dir = STATIC_DIR,
+    static_dir = get_static_dir(),
     upstreams::AbstractVector = [],
     download_only = false,
 )

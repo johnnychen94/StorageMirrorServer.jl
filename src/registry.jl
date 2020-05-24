@@ -53,8 +53,8 @@ function make_tarball(
     upstreams::AbstractVector = [],
     download_only = false,
     show_progress = true,
-    static_dir = STATIC_DIR,
-    clones_dir = CLONES_DIR,
+    static_dir = get_static_dir(),
+    clones_dir = get_clones_dir(),
 )
     upstreams = get_upstream.(upstreams)
     if !isempty(upstreams)
@@ -67,12 +67,17 @@ function make_tarball(
         @warn "Using default DEPOT_PATH could easily fill up free disk spaces (especially for SSDs). You can set `JULIA_DEPOT_PATH` env before starting julia" DEPOT_PATH
     end
 
+
     registry_root = get_registry_path(registry)
     reg_file = joinpath(registry_root, "Registry.toml")
     reg_data = TOML.parsefile(reg_file)
 
     # 1. generate registry tarball
     check_registry(registry_root)
+    # fetch the latest version of registry
+    run(`git -C $registry_root fetch --all`)
+    run(`git -C $registry reset --hard origin/master`) # TODO: no hardcoded `origin/master`
+
     registry_hash = readchomp(`git -C $registry_root rev-parse 'HEAD^{tree}'`)
     uuid = reg_data["uuid"]
     registry = GitTree(registry_root, uuid, registry_hash)

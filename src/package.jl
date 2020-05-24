@@ -53,8 +53,8 @@ function make_tarball(
     pkg::Package;
     upstreams::AbstractVector = [],
     download_only = false,
-    static_dir = STATIC_DIR,
-    clones_dir = CLONES_DIR,
+    static_dir = get_static_dir(),
+    clones_dir = get_clones_dir(),
     progress::Union{Nothing,Progress} = nothing,
 )
     # 1. clone repo
