@@ -18,6 +18,8 @@ function write_atomic(f::Function, path::String)
         end
         if retval !== false
             mv(temp_file, path; force=true)
+        else
+            rm(temp_file; force=true)
         end
     catch e
         rm(temp_file; force=true)
