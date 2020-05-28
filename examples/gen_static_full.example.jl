@@ -42,7 +42,7 @@ if !isdir(registry_root)
     run(`git clone https://github.com/JuliaRegistries/General.git $registry_root`)
 end
 run(`git -C $registry_root fetch --all`)
-run(`git -C $registry reset --hard origin/master`)
+run(`git -C $registry_root reset --hard origin/master`)
 
 
 # only pull/mirror whatever upstream server provides
