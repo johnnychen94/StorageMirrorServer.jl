@@ -33,6 +33,25 @@ const STATIC_DIR = "/mnt/mirrors/julia"
 # For the usage of storage server, there's no need to serve these from HTTP
 const CLONES_DIR = "/root/StorageServer/clones"
 
+# fetch the latest version of registry
+registry_root = "/root/StorageServer/registries/General"
+if !isdir(registry_root)
+    run(`git clone https://github.com/JuliaRegistries/General.git $registry_root`)
+end
+run(`git -C $registry_root fetch --all`)
+run(`git -C $registry reset --hard origin/master`)
+
+
 # only pull/mirror whatever upstream server provides
 upstreams = ["pkg.julialang.org"]
-mirror_tarball("General", upstreams; static_dir = STATIC_DIR, clones_dir = CLONES_DIR)
+mirror_tarball(registry_root, upstreams; static_dir = STATIC_DIR, clones_dir = CLONES_DIR)
+# use `make_tarball` instead of `mirror_tarball` to build tarballs from scratch
+
+
+# post-cleanup
+# this might not be necessary, but sometimes there are tmp files left in `/tmp`
+foreach(readdir(tempdir(), join = true)) do path
+    if isfile(path) && !isnothing(match(r"jl_(.*)-download\.\w*(\.sha256)?", path))
+        rm(path; force = true)
+    end
+end

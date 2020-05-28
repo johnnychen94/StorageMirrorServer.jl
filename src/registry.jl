@@ -26,8 +26,8 @@ After building, all static content data are saved to `static_dir`:
   from existing upstreams. If upstream servers doesn't serve a file, the file is skipped. By default
   it is `false`.
 - `show_progress::Bool`: `true` to show an additional progress meter. By default it is `true`.
-- 'static_dir::String': where all static contents are saved to. By default it is "static".
-- 'clones_dir::String': where the package repositories are cloned to. By default it is "clones".
+- `static_dir::String`: where all static contents are saved to. By default it is "static".
+- `clones_dir::String`: where the package repositories are cloned to. By default it is "clones".
 
 # Examples
 
@@ -74,9 +74,6 @@ function make_tarball(
 
     # 1. generate registry tarball
     check_registry(registry_root)
-    # fetch the latest version of registry
-    run(`git -C $registry_root fetch --all`)
-    run(`git -C $registry reset --hard origin/master`) # TODO: no hardcoded `origin/master`
 
     registry_hash = readchomp(`git -C $registry_root rev-parse 'HEAD^{tree}'`)
     uuid = reg_data["uuid"]
@@ -107,12 +104,6 @@ function make_tarball(
     # update /registries to tell pkg server the current version is now ready
     update_registries(uuid, registry_hash; static_dir = static_dir)
 
-    # clean downloaded cache in tempdir
-    foreach(readdir(tempdir(), join = true)) do path
-        if isfile(path) && !isnothing(match(r"jl_(.*)-download\.\w*(\.sha256)?", path))
-            rm(path; force = true)
-        end
-    end
     return static_dir
 end
 
