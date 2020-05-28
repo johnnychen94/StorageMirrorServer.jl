@@ -33,6 +33,9 @@ const STATIC_DIR = "/mnt/mirrors/julia"
 # For the usage of storage server, there's no need to serve these from HTTP
 const CLONES_DIR = "/root/StorageServer/clones"
 
+# use the official upstream
+upstreams = ["pkg.julialang.org"]
+
 # fetch the latest version of registry
 registry_root = "/root/StorageServer/registries/General"
 if !isdir(registry_root)
@@ -43,9 +46,10 @@ run(`git -C $registry reset --hard origin/master`)
 
 
 # only pull/mirror whatever upstream server provides
-upstreams = ["pkg.julialang.org"]
-mirror_tarball(registry_root, upstreams; static_dir = STATIC_DIR, clones_dir = CLONES_DIR)
 # use `make_tarball` instead of `mirror_tarball` to build tarballs from scratch
+# If `static_dir` and `clones_dir` are not provided, it would read environment variables `JULIA_STATIC_DIR`
+# and `JULIA_CLONES_DIR` instead.
+mirror_tarball(registry_root, upstreams; static_dir = STATIC_DIR, clones_dir = CLONES_DIR)
 
 
 # post-cleanup

@@ -21,7 +21,7 @@ This package is written to make step 1 easy and stupid.
 
 # Basic Usage
 
-1. add this package `]add https://github.com/johnnychen94/StorageServer.jl#v0.1.0-alpha`
+1. add this package `]add https://github.com/johnnychen94/StorageServer.jl#v0.1.0-beta`
 2. modify the [example script](examples/gen_static_full.example.jl) and save it as `gen_static.jl`
 3. pull/build data `julia gen_static.jl`
 
@@ -38,7 +38,8 @@ upstream. This could be the default choice for mirror sites.
 
 ```julia
 upstreams = ["pkg.julialang.org"]
-mirror_tarball("General", upstreams; static_dir = STATIC_DIR, clones_dir = CLONES_DIR)
+registry = "path/to/git/repo/of/registry"
+mirror_tarball(registry, upstreams; static_dir = STATIC_DIR, clones_dir = CLONES_DIR)
 ```
 
 # Build from scratch
@@ -47,7 +48,7 @@ If you want to build the tarballs from "scratch", which is time-consuming, you o
 `mirror_tarball` part in the [example script](examples/gen_static_full.example.jl) to `make_tarball`.
 
 ```julia
-make_tarball("General"; static_dir = STATIC_DIR, clones_dir = CLONES_DIR)
+make_tarball(registry; static_dir = STATIC_DIR, clones_dir = CLONES_DIR)
 ```
 
 # Serve only a subset
