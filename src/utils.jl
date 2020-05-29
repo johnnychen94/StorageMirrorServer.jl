@@ -83,3 +83,21 @@ function is_default_depot_path()
 
     return true
 end
+
+
+### timeout
+
+function timeout_call(f::Function, timeout::Real; pollint=0.1)
+    start = now()
+
+    t = @task f()
+    schedule(t)
+
+    while !istaskdone(t)
+        if (now()-start).value >= 1000timeout
+            schedule(t, TimeoutException(), error=true)
+            break
+        end
+        sleep(pollint)
+    end
+end

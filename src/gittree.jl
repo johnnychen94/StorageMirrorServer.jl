@@ -57,8 +57,12 @@ function make_tarball(
             end
         end
     catch err
-        @warn "Cannot checkout $(tree.version)" err
-        return nothing
+        if err isa TimeoutException || err isa InterruptException
+            rethrow(err)
+        else
+            @warn "Cannot checkout $(tree.version)" err
+            return nothing
+        end
     end
 
     # 2. make tarballs for each artifacts
@@ -119,6 +123,10 @@ function _checkout_tree(tree::GitTree, target_directory)
             options = opts,
         )
     catch err
+        if err isa InterruptException || err isa TimeoutException
+            rethrow(err)
+        end
+        
         retry || rethrow(err)
 
         retry = false

@@ -69,7 +69,7 @@ function make_tarball(
     catch err
         @isdefined(src_path) && rm(src_path, force = true, recursive = true)
         rm(tarball, force = true)
-        if err isa InterruptException
+        if err isa InterruptException || err isa TimeoutException
             rethrow(err)
         else
             @warn err tarball = tarball

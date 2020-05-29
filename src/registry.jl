@@ -28,6 +28,8 @@ After building, all static content data are saved to `static_dir`:
 - `show_progress::Bool`: `true` to show an additional progress meter. By default it is `true`.
 - `static_dir::String`: where all static contents are saved to. By default it is "static".
 - `clones_dir::String`: where the package repositories are cloned to. By default it is "clones".
+- `timeout::Real`: specify the maximum building time (seconds) for each package. 
+  Incremental building can use a smaller one to make sure task doesn't hangs. By default it is `7200`.
 
 # Examples
 
@@ -55,6 +57,7 @@ function make_tarball(
     show_progress = true,
     static_dir = get_static_dir(),
     clones_dir = get_clones_dir(),
+    timeout = 7200,
 )
     upstreams = get_upstream.(upstreams)
     if !isempty(upstreams)
@@ -91,14 +94,24 @@ function make_tarball(
     packages = isnothing(packages) ? read_packages(registry_root) : packages
     p = show_progress ? Progress(mapreduce(x -> length(x.versions), +, packages)) : nothing
     Threads.@threads for pkg in packages
-        make_tarball(
-            pkg;
-            static_dir = static_dir,
-            clones_dir = clones_dir,
-            upstreams = upstreams,
-            download_only = download_only,
-            progress = p,
-        )
+        timeout_call(timeout) do
+            try
+                make_tarball(
+                    pkg;
+                    static_dir = static_dir,
+                    clones_dir = clones_dir,
+                    upstreams = upstreams,
+                    download_only = download_only,
+                    progress = p,
+                )
+            catch err
+                if err isa TimeoutException
+                    println("\nWarning: $(now())\t skip $(pkg.name) due to timeout $(timeout)s")
+                else
+                    rethrow(err)
+                end
+            end
+        end
     end
 
     # update /registries to tell pkg server the current version is now ready

@@ -51,7 +51,7 @@ function download_and_verify(server::String, resource::String, path::String)
         )
         # Raise warnings about bad HTTP response codes
         if response.status != 200
-            @warn "response status $(response.status)" server=server resource=resource
+            @debug "response status $(response.status)" server=server resource=resource
             return false
         end
 

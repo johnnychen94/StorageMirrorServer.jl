@@ -24,6 +24,8 @@ get_clones_dir() = get(ENV, "JULIA_CLONES_DIR", "clones")
 
 export make_tarball, mirror_tarball, read_packages
 
+struct TimeoutException <: Exception end
+
 include("utils.jl")
 include("resources.jl") # modified from PkgServer.jl
 

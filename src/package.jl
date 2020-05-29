@@ -65,8 +65,13 @@ function make_tarball(
         # although `git clone` removes `clone_dir` at failure
         # here we manually remove it again for safety
         rm(clone_dir, recursive = true, force = true)
-        @warn err name = pkg.name uuid = pkg.uuid
-        return
+
+        if err isa TimeoutException
+            rethrow(err)
+        else
+            @warn err name = pkg.name uuid = pkg.uuid
+            return
+        end
     end
     isdir(clone_dir) || return
 
@@ -95,13 +100,17 @@ function make_tarball(
                 download_only = download_only,
             )
 
-            @info "$(now())\t$(pkg.name)@$(ver)"
+            println("Info: $(now())\t $(pkg.name)@$(ver)")
         catch err
-            err isa InterruptException && rethrow(err)
             # failing to download resources for a specific version is acceptable
             # but we need to clean things up
-            @warn err repo_path = LibGit2.path(tree.repo) tarball = tarball
             rm(tarball, force = true)
+
+            if err isa InterruptException || err isa TimeoutException
+                rethrow(err)
+            else
+                @warn err repo_path = LibGit2.path(tree.repo) tarball = tarball 
+            end
         end
     end
 
@@ -130,6 +139,8 @@ function _clone_repo(pkg::Package, clone_dir)
             if err isa HTTP.ExceptionRequest.StatusError
                 @warn "failed to request $(pkg.url): $(pkg.name) might not exist or is not public."
                 return
+            else
+                rethrow(err)
             end
         end
     end
