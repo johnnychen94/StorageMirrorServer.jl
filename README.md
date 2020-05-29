@@ -19,9 +19,9 @@ To set up a storage server, you'll need to:
 
 This package is written to make step 1 easy and stupid.
 
-# Basic Usage
+## Basic Usage
 
-1. add this package `]add https://github.com/johnnychen94/StorageServer.jl#v0.1.0-beta`
+1. add this package `]add https://github.com/johnnychen94/StorageServer.jl#v0.1.0-rc1`
 2. modify the [example script](examples/gen_static_full.example.jl) and save it as `gen_static.jl`
 3. pull/build data `julia gen_static.jl`
 
@@ -31,7 +31,7 @@ You can read the not-so-friendly docstrings for advanced usage, but here are som
 * Utilize multiple threads, set environment variable `JULIA_NUM_THREADS`. For example,
   `JULIA_NUM_THREADS=8 julia gen_static.jl` would use 8 threads to pull data.
 
-# Mirror
+### Mirror
 
 See the [example script](examples/gen_static_full.example.jl) for how to pull the data from existing
 upstream. This could be the default choice for mirror sites.
@@ -42,7 +42,7 @@ registry = "path/to/git/repo/of/registry"
 mirror_tarball(registry, upstreams; static_dir = STATIC_DIR, clones_dir = CLONES_DIR)
 ```
 
-# Build from scratch
+### Build from scratch
 
 If you want to build the tarballs from "scratch", which is time-consuming, you only need to change the
 `mirror_tarball` part in the [example script](examples/gen_static_full.example.jl) to `make_tarball`.
@@ -51,7 +51,7 @@ If you want to build the tarballs from "scratch", which is time-consuming, you o
 make_tarball(registry; static_dir = STATIC_DIR, clones_dir = CLONES_DIR)
 ```
 
-# Serve only a subset
+### Serve only a subset
 
 > if the service serves a registry, it can serve all package versions referenced by that registry;
 > if it serves a package version, it can serve all artifacts used by that package.
@@ -82,3 +82,8 @@ make_tarball(registry; packages=pkgs)
 Note that the current implementation of Pkg doesn't support multiple pkg server, which means if you
 only host a subset of packages, those you don't host can only be downloaded from the original 
 fallback github/aws servers.
+
+
+## Credits
+
+This package is modified from the original implementation [gen_static.jl](https://github.com/JuliaPackaging/PkgServer.jl/blob/2614c7d4d7fd8d422d0a82ffe5083a834be56bf8/bin/gen_static.jl).
