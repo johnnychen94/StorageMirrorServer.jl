@@ -83,6 +83,9 @@ Note that the current implementation of Pkg doesn't support multiple pkg server,
 only host a subset of packages, those you don't host can only be downloaded from the original 
 fallback github/aws servers.
 
+## Examples
+
+This package is used to build the [BFSU](https://mirrors.bfsu.edu.cn/help/julia/) mirror site.
 
 ## Credits
 
