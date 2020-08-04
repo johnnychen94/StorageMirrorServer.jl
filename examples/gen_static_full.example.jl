@@ -3,15 +3,16 @@
 #
 # Usage:
 #  1. make sure you've added StorageMirrorServer.jl
-#  2. generate/pull all tarballs: `julia gen_static.jl`
+#  2. generate/pull all tarballs: `julia gen_static_full.jl`
 #  3. set a cron job to run step 2 regularly
 #
 # Note:
 #   * Initialization would typically take days, depending on the network bandwidth and CPU
 #   * set `JULIA_NUM_THREADS` to use multiple threads
+#   * if you find `Info: date pkg@version` over-verbose, you can redirect stdout to `/dev/null`
 #
 # Disk space requirements for a complete storage (increases over time):
-#   * `STATIC_DIR`: at least 500GB
+#   * `STATIC_DIR`: at least 500GB, would be better to have more than 3TB free space
 
 using StorageMirrorServer
 using Pkg
@@ -36,6 +37,9 @@ registries = [
 # you can modify them accordingly to fit your settings
 parameters = Dict(
     # set it to false to initialize the first build, or when there are tarballs missing
+    # set it to true could significantly boost the incremental build by avoiding unncessary tarball extraction
+    # CAVEAT: If we skip the tarball extraction, i.e., set this to true, then it is possible that artifacts
+    # are missing and never get downloaded.
     :incremental_build => false,
 
     # timeout (seconds) for each package (not the whole mirror process)
