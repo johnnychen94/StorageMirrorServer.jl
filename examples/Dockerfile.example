@@ -1,15 +1,16 @@
-FROM python:3.6
+# Usage:
+#   0. `cd examples`
+#   1. modify gen_static_full.example.jl
+#   2. `docker build -f Dockerfile.example . -t "local/julia_mirror"`
+#   3. `docker run -v /mnt/mirrors/julia:/julia -e JULIA_NUM_THREADS=4 local/julia_mirror`
+#
+
+FROM julia:1.5
 LABEL description="A community maintained docker script to set up julia mirror easily."
 LABEL maintainer="Johnny Chen <johnnychen94@hotmail.com>"
 
-RUN pip install --upgrade pip && \
-    pip install jill==0.6.14 && \
-    pip cache purge
-
-RUN jill install 1.5 --confirm
-
-WORKDIR /julia
-ADD gen_static_full.example.jl gen_static_full.jl
 RUN julia -e 'using Pkg; pkg"add https://github.com/johnnychen94/StorageServer.jl#v0.1.0-rc2"'
 
-CMD julia gen_static_full.jl
+WORKDIR /
+ADD gen_static_full.example.jl /gen_static_full.jl
+CMD julia /gen_static_full.jl
