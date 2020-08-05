@@ -184,7 +184,6 @@ function mirror_tarball(
                         end
                     catch err
                         err isa InterruptException && rethrow(err)
-                        err isa TimeoutException && rethrow(err)
 
                         # Failing to download artifact is not fatal, but we still need to tag this version tarball
                         # as incomplete and remove it. This makes incremental buidling much easier to handle
@@ -212,6 +211,11 @@ function mirror_tarball(
         static_dir::AbstractString;
         kwargs...
 )
+    # Artifacts.toml are completely mananged by users, and it is very likely to contain
+    # incorrect data, so here we do an eager check to suppress unrelated warnings
+
+    isempty(artifact.hash) && return false
+
     resource = "/artifact/$(artifact.hash)"
     tarball = joinpath(static_dir, "artifact", artifact.hash)
 
