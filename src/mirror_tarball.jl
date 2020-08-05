@@ -75,29 +75,34 @@ function mirror_tarball(
 
     # try to download failed resource
     failed_logfile = joinpath(static_dir, "failed_resources.txt")
-    if isfile(failed_logfile) && retry_failed
+    if isfile(failed_logfile)
         records = Set(readlines(failed_logfile))
 
         failed_record = String[]
-        ThreadPools.@qthreads for record in records
-            success = false
-            try
-                tarball = joinpath(static_dir, record)
-                success = download_and_verify(
-                    upstreams, record, tarball;
-                    http_parameters=http_parameters,
-                    throw_warnings=false
-                )
-            catch err
+        if retry_failed
+            ThreadPools.@qthreads for record in records
                 success = false
-            finally
-                success || push!(failed_record, record)
+                try
+                    tarball = joinpath(static_dir, record)
+                    success = download_and_verify(
+                        upstreams, record, tarball;
+                        http_parameters=http_parameters,
+                        throw_warnings=false
+                    )
+                catch err
+                    success = false
+                finally
+                    success || push!(failed_record, record)
+                end
             end
+        else
+            # remove duplicated records
+            foreach(x->push!(failed_record, x), records)
         end
 
         rm(failed_logfile, force=true)
         open(failed_logfile, "w") do io
-            foreach(x->println(io, x), records)
+            foreach(x->println(io, x), failed_record)
         end
     end
 
