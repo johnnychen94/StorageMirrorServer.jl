@@ -1,4 +1,4 @@
-# !/usr/bin/env julia
+#! /usr/bin/env julia
 # This script builds/pulls all static contents needed by storage server.
 #
 # Usage:
