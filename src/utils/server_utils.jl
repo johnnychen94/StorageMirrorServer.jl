@@ -27,6 +27,9 @@ function query_latest_hash(registry::RegistryMeta, server::AbstractString)
         err isa TimeoutException && return nothing
         rethrow(err)
     end
+    # FIXME: this is only a temporary workaround, I'm not very sure how response can be a DNSError after
+    # the try-catch blcok
+    response isa Exception && return nothing
     isnothing(response) && return nothing
 
     get_hash(IOBuffer(response.body), registry.uuid)
@@ -159,7 +162,7 @@ function download_and_verify(
     end
 
     if isnothing(hash)
-        @warn "bad resource: valid hash not found" server=server resource=resource
+        @warn "bad resource: valid hash not found" server=server resource=resource path=path
         return false
     end
 
@@ -181,6 +184,7 @@ function download_and_verify(
         catch err
             if err isa TimeoutException
                 @warn "timeout when fetching resource" resource=server * resource
+                log_to_failure(path)
                 return false
             end
             rethrow(err)
@@ -198,9 +202,28 @@ function download_and_verify(
             tree_hash = open(temp_file, "r") do io
                 Tar.tree_hash(decompress(io), algorithm="git-sha1")
             end
+            
             # Raise warnings about resource hash mismatches
             if hash != tree_hash
+                # julia has changed how hash is calculated, which affects empty directory
+                # we specially check whethere hash mismatch is caused by this, and if so,
+                # skip the warning and make a copy
+                ytree_hash = open(temp_file, "r") do io
+                    Tar.tree_hash(decompress(io), algorithm="git-sha1", skip_empty=true)
+                end
+
+                if hash == ytree_hash
+                    yskip_tarball = joinpath(dirname(path), ytree_hash)
+                    if !isfile(yskip_tarball)
+                        temp_yskip_tarball = yskip_tarball * ".tmp." * randstring()
+                        cp(temp_file, temp_yskip_tarball)
+                        mv(temp_yskip_tarball, yskip_tarball)
+                    end
+                    return true
+                end
+
                 @warn "resource hash mismatch" server=server resource=resource hash=tree_hash
+                log_to_failure(path)
                 return false
             end
         end
@@ -216,6 +239,7 @@ function download_and_verify(
         servers::AbstractVector{String},
         resource::String,
         path::String;
+        throw_warnings = true,
         kwargs...
 )
 
@@ -224,6 +248,21 @@ function download_and_verify(
         download_and_verify(server, resource, path; kwargs...) && return true
     end
 
-    @warn "failed to download resource" servers=join(servers, ", ") resource=resource
+    throw_warnings && @warn "failed to download resource" servers=join(servers, ", ") resource=resource
+    log_to_failure(path)
     return false
+end
+
+get_static_dir(path::String) = replace(path, r"/(registry|package|artifact)/.*" => "")
+function log_to_failure(path::String)
+    try
+        static_dir = get_static_dir(path)
+        path = split(path, static_dir)[2]
+        logfile = joinpath(static_dir, "failed_resources.txt")
+        open(logfile, "a"; lock=true) do io
+            println(io, path)
+        end
+    catch err
+        @warn err
+    end
 end

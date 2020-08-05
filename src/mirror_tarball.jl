@@ -20,6 +20,8 @@ Set environment variable `JULIA_NUM_THREADS` to enable multi-threads.
 - `packages::AbstractVector{Package}`: manually create and specify a set of packages that needed to be stored. This
    can be used to build only a partial of the complete storage. Check [`read_packages`](@ref read_packages) for how
    to build packages info. (Experimental)
+- `retry_failed::Bool`: `failed_resources.txt` stores resource records that failed to download, set `retry_failed`
+   to `true` to try to download these resources. By default it is `true`.
 - `show_progress::Bool`: `true` to show an additional progress meter. By default it is `true`.
 - `timeout::Real`: specify the maximum building time (seconds) for each package. 
     Incremental building can use a smaller one to make sure task doesn't hangs. By default it is `7200`.
@@ -36,6 +38,7 @@ function mirror_tarball(
         packages::AbstractVector = [],
         show_progress = true,
         timeout = 7200,
+        retry_failed = true,
 )
     upstreams = normalize_upstream.(upstreams)
     uuid = registry.uuid
@@ -60,15 +63,44 @@ function mirror_tarball(
     end
 
     if isempty(packages)
-        @info "No new packages, skip this build"
-        return latest_hash
+        @info "No new packages, skip incremental build"
+    else
+        num_versions = mapreduce(x -> length(x.versions), +, packages)
+        upstream_str = join(upstreams, ", ")
+        @info "Start pulling" date=now() name=name uuid=uuid hash=latest_hash num_versions=num_versions upstreams=upstream_str
+        p = show_progress ? Progress(num_versions) : nothing
+        mirror_tarball(packages, upstreams, static_dir; pkg_timeout=timeout, progress=p, http_parameters=http_parameters)
     end
 
-    num_versions = mapreduce(x -> length(x.versions), +, packages)
-    upstream_str = join(upstreams, ", ")
-    @info "Start pulling" date=now() name=name uuid=uuid hash=latest_hash num_versions=num_versions upstreams=upstream_str
-    p = show_progress ? Progress(num_versions) : nothing
-    mirror_tarball(packages, upstreams, static_dir; pkg_timeout=timeout, progress=p, http_parameters=http_parameters)
+
+    # try to download failed resource
+    failed_logfile = joinpath(static_dir, "failed_resources.txt")
+    if isfile(failed_logfile) && retry_failed
+        records = Set(readlines(failed_logfile))
+
+        failed_record = String[]
+        ThreadPools.@qthreads for record in records
+            success = false
+            try
+                tarball = joinpath(static_dir, record)
+                success = download_and_verify(
+                    upstreams, record, tarball;
+                    http_parameters=http_parameters,
+                    throw_warnings=false
+                )
+            catch err
+                success = false
+            finally
+                success || push!(failed_record, record)
+            end
+        end
+
+        rm(failed_logfile, force=true)
+        open(failed_logfile, "w") do io
+            foreach(x->println(io, x), records)
+        end
+    end
+
 
     # update /registries after updates
     registries_file = joinpath(static_dir, "registries")

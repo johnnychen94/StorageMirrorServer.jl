@@ -39,7 +39,8 @@ parameters = Dict(
     # set it to false to initialize the first build, or when there are tarballs missing
     # set it to true could significantly boost the incremental build by avoiding unncessary tarball extraction
     # CAVEAT: If we skip the tarball extraction, i.e., set this to true, then it is possible that artifacts
-    # are missing and never get downloaded.
+    # are missing and never get downloaded. This is still experimental feature and is not recommended to use
+    # unless you have a strong reason.
     :incremental_build => false,
 
     # timeout (seconds) for each package (not the whole mirror process)
@@ -54,6 +55,11 @@ parameters = Dict(
 
     # whether to show the progress bar
     :show_progress => true,
+
+    # whether to retry downloading of previously failed resources
+    # the record is hold in output_dir/failed_resources.txt
+    # Some of the resources have never been available, set this to `false` could skip these invalid resources
+    :retry_failed => true,
 )
 
 for reg in registries
