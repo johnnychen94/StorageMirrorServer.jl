@@ -107,9 +107,10 @@ Send a `HEAD` request to the specified URL, returns `true` if the response is HT
 """
 function url_exists(url::AbstractString)
     try
-        response = timeout_call(5) do
+        response = timeout_call(10) do
             HTTP.request("HEAD", url, status_exception = false)
         end
+        isnothing(response) && return false
         return response.status == 200
     catch err
         err isa TimeoutException && return false
