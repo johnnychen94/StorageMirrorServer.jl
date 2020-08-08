@@ -40,6 +40,9 @@ parameters = Dict(
         :retry => false,
         :retries => 1,
         :timeout => 1200,
+        # download data using proxy
+        # it also respects `http_proxy`, `https_proxy` and `no_proxy` environment variables
+        # :proxy => "http://localhost:1080"
     ),
 
     # whether to show the progress bar
