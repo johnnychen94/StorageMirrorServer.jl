@@ -57,7 +57,7 @@ function mirror_tarball(
             rst || log_to_failure(resource, failed_logfile)
             return rst
         catch err
-            throw_warnings && @warn err
+            throw_warnings && @warn err resource=resource
             rm(tarball; force=true)
             return false
         end
@@ -143,7 +143,7 @@ function log_to_failure(resource::AbstractString, logfile)
             println(io, resource)
         end
     catch err
-        @warn err
+        @warn err resource=resource
     end
 end
 
