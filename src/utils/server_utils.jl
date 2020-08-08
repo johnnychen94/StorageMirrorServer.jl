@@ -156,7 +156,7 @@ end
 function download_and_verify(
         server::String,
         resource::String,
-        path::String;
+        tarball::String;
         http_parameters::Dict{Symbol, Any} = Dict{Symbol, Any}(),
 )
     http_parameters = merge(default_http_parameters, http_parameters)
@@ -169,16 +169,16 @@ function download_and_verify(
     end
 
     if isnothing(hash)
-        @warn "bad resource: valid hash not found" server=server resource=resource path=path
+        @warn "bad resource: valid hash not found" server=server resource=resource tarball=tarball
         return false
     end
 
     # Verifying hash requires a lot of IO reads. A faster way is to only check if the file
     # exists. This is okay if we can make sure the file isn't created when download/creation
     # of tarball fails
-    isfile(path) && return true
+    isfile(tarball) && return true
 
-    write_atomic(path) do temp_file, io
+    write_atomic(tarball) do temp_file, io
         try
             response = timeout_call(timeout) do 
                     HTTP.get(
@@ -216,7 +216,7 @@ function download_and_verify(
                 end
 
                 if hash == ytree_hash
-                    yskip_tarball = joinpath(dirname(path), ytree_hash)
+                    yskip_tarball = joinpath(dirname(tarball), ytree_hash)
                     if !isfile(yskip_tarball)
                         temp_yskip_tarball = yskip_tarball * ".tmp." * randstring()
                         cp(temp_file, temp_yskip_tarball)
@@ -233,7 +233,7 @@ function download_and_verify(
         return true
     end
 
-    return isfile(path)
+    return isfile(tarball)
 end
 
 

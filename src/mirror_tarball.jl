@@ -15,13 +15,9 @@ Set environment variable `JULIA_NUM_THREADS` to enable multi-threads.
 # Keyword parameters
 
 - `http_parameters::Dict{Symbol, Any}`: any parameters that need to pass to `HTTP.get` when fetching resources.
-- `incremental_build::Bool`: `false` to force a full scan of the registry and its artifacts, which can be CPU
-   heavy and time-consuming. By default it is `true`.
 - `packages::AbstractVector{Package}`: manually create and specify a set of packages that needed to be stored. This
    can be used to build only a partial of the complete storage. Check [`read_packages`](@ref read_packages) for how
    to build packages info. (Experimental)
-- `retry_failed::Bool`: `failed_resources.txt` stores resource records that failed to download, set `retry_failed`
-   to `true` to try to download these resources. By default it is `true`.
 - `show_progress::Bool`: `true` to show an additional progress meter. By default it is `true`.
 
 """
@@ -32,10 +28,8 @@ function mirror_tarball(
         upstreams::AbstractVector,
         static_dir::AbstractString;
         http_parameters::Dict{Symbol, Any} = Dict{Symbol, Any}(),
-        incremental_build = true,
         packages::AbstractVector = [],
         show_progress = true,
-        retry_failed = true,
 )
     ### Except for the complex error handling strategy, the mirror routine
     ###   1. query upstreams to get the latest hash 
@@ -55,11 +49,12 @@ function mirror_tarball(
 
     uuid = registry.uuid
     name = registry.name
+    failed_logfile = joinpath(static_dir, "failed_resources.txt")
     upstream_str = join(upstreams, ", ")
     function _download(resource, tarball; throw_warnings=true)
         try
             rst = download_and_verify(upstreams, resource, tarball; http_parameters=http_parameters, throw_warnings=throw_warnings)
-            rst || log_to_failure(resource, static_dir)
+            rst || log_to_failure(resource, failed_logfile)
             return rst
         catch err
             throw_warnings && @warn err
@@ -86,7 +81,8 @@ function mirror_tarball(
         open(tarball, "r") do io
             Tar.extract(decompress(io), tmpdir)
         end
-        read_packages(tmpdir; static_dir=static_dir, fetch_full_registry=!incremental_build)
+        # only returns packages that are not stored in static_dir
+        read_packages(tmpdir; fetch_full_registry=false, static_dir=static_dir)
     end
 
     num_versions = mapreduce(x -> length(x.versions), +, packages)
@@ -106,7 +102,9 @@ function mirror_tarball(
     end
 
     # 4. read and download `/artifact/$hash`
-    artifacts = query_artifacts(static_dir)
+    # only returns artifacts that are not stored in static_dir
+    artifacts = query_artifacts(static_dir; fetch_full=false)
+    @info "found $(length(artifacts)) new artifacts"
     p = show_progress ? Progress(length(artifacts); desc="$name: Pulling artifacts: ") : nothing
     ThreadPools.@qbthreads for artifact in artifacts
         if is_valid(artifact)
@@ -119,37 +117,6 @@ function mirror_tarball(
         end
     end
 
-    # try to download failed resource
-    failed_logfile = joinpath(static_dir, "failed_resources.txt")
-    if isfile(failed_logfile)
-        records = Set(readlines(failed_logfile))
-
-        failed_record = String[]
-        if retry_failed
-            p = show_progress ? Progress(length(records); desc="$name: Re-pulling failed resources: ") : nothing
-
-            ThreadPools.@qbthreads for resource in records
-                if !isnothing(match(resource_re, resource))
-                    tarball = joinpath(static_dir, resource[2:end]) # note: joinpath(pwd(), "/a") == "/a"
-                    mkpath(dirname(tarball))
-                    _download(resource, tarball; throw_warnings=false) || push!(failed_record, resource)
-                else
-                    @warn "invalid resource" resource=resource file=failed_logfile
-                end
-                isnothing(p) || ProgressMeter.next!(p; showvalues = [(:resource, resource)])
-            end
-        else
-            # remove duplicated records
-            append!(failed_record, records)
-        end
-
-        sleep(0.2) # unsure why, but this fixes an UndefRefError error
-        open(failed_logfile, "w") do io
-            foreach(x->println(io, x), failed_record)
-        end
-    end
-
-
     # update /registries after updates
     registries_file = joinpath(static_dir, "registries")
     update_registries(registries_file, uuid, latest_hash)
@@ -159,13 +126,19 @@ function mirror_tarball(
         rm(tarball; force=true)
     end
 
+    if isfile(failed_logfile)
+        failed_record = Set(readlines(failed_logfile))
+        open(failed_logfile, "w") do io
+            foreach(x->println(io, x), failed_record)
+        end
+    end
+
     return latest_hash
 end
 
 ### helpers
-function log_to_failure(resource::AbstractString, static_dir::AbstractString)
+function log_to_failure(resource::AbstractString, logfile)
     try
-        logfile = joinpath(static_dir, "failed_resources.txt")
         open(logfile, "a"; lock=true) do io
             println(io, resource)
         end
@@ -191,7 +164,7 @@ function update_registries(registries_file, uuid, hash)
     end
 end
 
-function query_artifacts(static_dir)
+function query_artifacts(static_dir; fetch_full=false)
     cache_root = joinpath(static_dir, ".cache")
     package_re = Regex("package/($uuid_re)/($hash_re)")
     tarball_glob_pattern = ["package", Regex(uuid_re), Regex(hash_re)]
@@ -232,10 +205,20 @@ function query_artifacts(static_dir)
         for (key, artifact_info) in TOML.parsefile(artifact_toml)
             if artifact_info isa Dict
                 # platform independent artifacts, e.g., TestImages
-                push!(all_artifacts, Artifact(artifact_info["git-tree-sha1"]))
+                tree_hash = artifact_info["git-tree-sha1"]
+                tarball = joinpath(static_dir, "artifact", tree_hash)
+                if fetch_full || !isfile(tarball)
+                    push!(all_artifacts, Artifact(tree_hash))
+                end
             elseif artifact_info isa AbstractVector
                 # platform dependent artifacts, e.g., FFTW_jll
-                append!(all_artifacts, map(x->Artifact(x["git-tree-sha1"]), artifact_info))
+                for x in artifact_info
+                    tree_hash = x["git-tree-sha1"]
+                    tarball = joinpath(static_dir, "artifact", tree_hash)
+                    if fetch_full || !isfile(tarball)
+                        push!(all_artifacts, Artifact(tree_hash))
+                    end
+                end
             else
                 @warn "invalid artifact toml" package=pkg version=ver artifact=artifact_info
             end
