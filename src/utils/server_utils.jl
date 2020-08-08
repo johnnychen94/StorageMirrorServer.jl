@@ -177,6 +177,7 @@ function download_and_verify(
     # exists. This is okay if we can make sure the file isn't created when download/creation
     # of tarball fails
     isfile(tarball) && return true
+    url_exists(server * resource) || return false
 
     write_atomic(tarball) do temp_file, io
         try
