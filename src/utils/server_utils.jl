@@ -106,8 +106,15 @@ end
 Send a `HEAD` request to the specified URL, returns `true` if the response is HTTP 200.
 """
 function url_exists(url::AbstractString)
-    response = HTTP.request("HEAD", url, status_exception = false)
-    response.status == 200
+    try
+        response = timeout_call(5) do
+            HTTP.request("HEAD", url, status_exception = false)
+        end
+        return response.status == 200
+    catch err
+        err isa TimeoutException && return false
+        rethrow(err)
+    end
 end
 
 """
