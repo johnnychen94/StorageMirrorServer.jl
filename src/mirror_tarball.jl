@@ -57,9 +57,15 @@ function mirror_tarball(
     name = registry.name
     upstream_str = join(upstreams, ", ")
     function _download(resource, tarball; throw_warnings=true)
-        rst = download_and_verify(upstreams, resource, tarball; http_parameters=http_parameters, throw_warnings=throw_warnings)
-        rst || log_to_failure(resource, static_dir)
-        return rst
+        try
+            rst = download_and_verify(upstreams, resource, tarball; http_parameters=http_parameters, throw_warnings=throw_warnings)
+            rst || log_to_failure(resource, static_dir)
+            return rst
+        catch err
+            throw_warnings && @warn err
+            rm(tarball; force=true)
+            return false
+        end
     end
 
     # 1. query latest registry hash
@@ -92,12 +98,8 @@ function mirror_tarball(
             tree_hash = hash_info["git-tree-sha1"]
             resource = "/package/$(pkg.uuid)/$(tree_hash)"
             tarball = joinpath(static_dir, "package", pkg.uuid, tree_hash)
-            
-            try
-                _download(resource, tarball)
-            catch err
-                @warn err
-            end
+
+            _download(resource, tarball)
 
             isnothing(p) || ProgressMeter.next!(p; showvalues = [(:package, pkg.name), (:version, ver), (:uuid, pkg.uuid), (:hash, tree_hash)])
         end
@@ -111,11 +113,7 @@ function mirror_tarball(
             resource = "/artifact/$(artifact.hash)"
             tarball = joinpath(static_dir, "artifact", artifact.hash)
 
-            try
-                _download(resource, tarball)
-            catch err
-                @warn err
-            end
+            _download(resource, tarball)
             
             isnothing(p) || ProgressMeter.next!(p; showvalues = [(:artifact, artifact.hash)])
         end
@@ -133,14 +131,8 @@ function mirror_tarball(
             ThreadPools.@qbthreads for resource in records
                 if !isnothing(match(resource_re, resource))
                     tarball = joinpath(static_dir, resource[2:end]) # note: joinpath(pwd(), "/a") == "/a"
-                    try
-                        mkpath(dirname(tarball))
-                        _download(resource, tarball; throw_warnings=false) || push!(failed_record, resource)
-                    catch err
-                        # these are very likely to fail again
-                        @debug err
-                        push!(failed_record, resource)
-                    end
+                    mkpath(dirname(tarball))
+                    _download(resource, tarball; throw_warnings=false) || push!(failed_record, resource)
                 else
                     @warn "invalid resource" resource=resource file=failed_logfile
                 end
