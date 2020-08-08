@@ -162,6 +162,11 @@ function mirror_tarball(
     registries_file = joinpath(static_dir, "registries")
     update_registries(registries_file, uuid, latest_hash)
 
+    # clean up
+    foreach(glob(glob"**/*.tmp.*", static_dir)) do tarball
+        rm(tarball; force=true)
+    end
+
     return latest_hash
 end
 
