@@ -172,7 +172,6 @@ function download_and_verify(
     isfile(path) && return true
 
     write_atomic(path) do temp_file, io
-        response = nothing
         try
             response = timeout_call(timeout) do 
                     HTTP.get(
@@ -180,21 +179,18 @@ function download_and_verify(
                         server * resource;
                         http_parameters...
                     )
-            end 
+            end
+
+            if response.status != 200
+                @debug "response status $(response.status)" server=server resource=resource
+                return false
+            end
         catch err
             if err isa TimeoutException
                 @warn "timeout when fetching resource" resource=server * resource
-                log_to_failure(path)
                 return false
             end
             rethrow(err)
-        end
-        isnothing(response) && return false
-
-        # Raise warnings about bad HTTP response codes
-        if response.status != 200
-            @debug "response status $(response.status)" server=server resource=resource
-            return false
         end
 
         # If we're given a hash, then check tarball git hash
@@ -223,7 +219,6 @@ function download_and_verify(
                 end
 
                 @warn "resource hash mismatch" server=server resource=resource hash=tree_hash
-                log_to_failure(path)
                 return false
             end
         end
@@ -249,20 +244,5 @@ function download_and_verify(
     end
 
     throw_warnings && @warn "failed to download resource" servers=join(servers, ", ") resource=resource
-    log_to_failure(path)
     return false
-end
-
-get_static_dir(path::String) = replace(path, r"/(registry|package|artifact)/.*" => "")
-function log_to_failure(path::String)
-    try
-        static_dir = get_static_dir(path)
-        path = split(path, static_dir)[2]
-        logfile = joinpath(static_dir, "failed_resources.txt")
-        open(logfile, "a"; lock=true) do io
-            println(io, path)
-        end
-    catch err
-        @warn err
-    end
 end

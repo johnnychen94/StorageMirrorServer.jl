@@ -4,6 +4,4 @@
 .DS_Store
 /Manifest.toml
 /dev/
-/clones
-/static
-/depot
+/julia

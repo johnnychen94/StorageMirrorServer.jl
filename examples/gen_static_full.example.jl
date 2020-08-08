@@ -43,9 +43,6 @@ parameters = Dict(
     # unless you have a strong reason.
     :incremental_build => false,
 
-    # timeout (seconds) for each package (not the whole mirror process)
-    :timeout => 7200,
-
     # if needed, you can pass custom http parameters
     :http_parameters => Dict{Symbol, Any}(
         :retry => true,

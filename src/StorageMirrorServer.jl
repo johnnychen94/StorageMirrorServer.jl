@@ -2,6 +2,8 @@ module StorageMirrorServer
 
 using Random
 
+using Glob
+
 using Pkg
 using Pkg: TOML
 using Pkg.Artifacts: artifact_names
