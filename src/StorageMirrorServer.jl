@@ -23,9 +23,9 @@ compress(io::IO) = TranscodingStream(GzipCompressor(level = 9), io)
 decompress(io::IO) = TranscodingStream(GzipDecompressor(), io)
 
 const default_http_parameters = Dict(
-    :retry => true,
-    :retries => 2,
-    :timeout => 600,
+    :retry => false,
+    :retries => 1,
+    :timeout => 1200,
 )
 
 export mirror_tarball, read_packages

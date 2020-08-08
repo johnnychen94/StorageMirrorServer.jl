@@ -44,9 +44,9 @@ parameters = Dict(
 
     # if needed, you can pass custom http parameters
     :http_parameters => Dict{Symbol, Any}(
-        :retry => true,
-        :retries => 2,
-        :timeout => 600,
+        :retry => false,
+        :retries => 1,
+        :timeout => 1200,
     ),
 
     # whether to show the progress bar

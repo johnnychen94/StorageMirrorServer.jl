@@ -32,7 +32,7 @@ end
 function read_packages(
     registry_root::AbstractString;
     latest_versions_num::Union{Nothing,Integer} = nothing,
-    static_dir::AbstractString = nothing,
+    static_dir = nothing,
     fetch_full_registry = false
 )
     reg_file = joinpath(registry_root, "Registry.toml")
@@ -60,38 +60,6 @@ function read_packages(
             end
         end
         pkgs = [pkg for pkg in pkgs if !isempty(pkg.versions)]
-
-        # parse old registry and compute registry diffs
-        registries_file = joinpath(static_dir, "registries")
-
-        isfile(registries_file) || @goto ENDDIFF
-        reg_tarball = open(registries_file) do io
-            reg_hash = get_hash(io, reg_info["uuid"])
-            joinpath(static_dir, "registry", reg_info["uuid"], reg_hash)
-        end
-
-        isfile(reg_tarball) || @goto ENDDIFF
-        old_pkgs = mktempdir() do tmpdir
-            open(reg_tarball, "r") do io
-                Tar.extract(decompress(io), tmpdir)
-            end
-            read_packages(tmpdir, static_dir=static_dir; fetch_full_registry=true)
-        end
-
-        old_pkgs = Dict(x.uuid => x for x in old_pkgs)
-        for pkg in pkgs
-            uuid = pkg.uuid
-            uuid in keys(old_pkgs) || continue
-
-            for (ver, hash_info) in pkg.versions
-                if ver in keys(old_pkgs[uuid].versions)
-                    delete!(pkg.versions, ver)
-                end
-            end
-        end
-        pkgs = [pkg for pkg in pkgs if !isempty(pkg.versions)]
-
-        @label ENDDIFF
     end
 
     sort!(pkgs, by = x -> x.name)
