@@ -23,7 +23,6 @@ output_dir = "julia"
 
 # check https://status.julialang.org/ for available public storage servers
 upstreams = [
-    "https://mirrors.bfsu.edu.cn/julia/static",
     "https://kr.storage.juliahub.com",
     "https://us-east.storage.juliahub.com",
 ]
