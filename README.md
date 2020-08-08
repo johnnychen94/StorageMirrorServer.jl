@@ -21,7 +21,7 @@ This package is written to make step 1 easy and stupid.
 
 ## Basic Usage
 
-1. add this package `]add https://github.com/johnnychen94/StorageServer.jl#v0.1.1-rc2`
+1. add this package `]add https://github.com/johnnychen94/StorageServer.jl#v0.1.1-rc3`
 2. modify the [example script](examples/gen_static_full.example.jl) and save it as `gen_static.jl`
 3. pull/build data `julia gen_static.jl`
 
