@@ -95,9 +95,8 @@ function mirror_tarball(
             resource = "/package/$(pkg.uuid)/$(tree_hash)"
             tarball = joinpath(static_dir, "package", pkg.uuid, tree_hash)
 
-            _download(resource, tarball)
-
             isnothing(p) || ProgressMeter.next!(p; showvalues = [(:package, pkg.name), (:version, ver), (:uuid, pkg.uuid), (:hash, tree_hash)])
+            _download(resource, tarball)
         end
     end
 
@@ -111,9 +110,8 @@ function mirror_tarball(
             resource = "/artifact/$(artifact.hash)"
             tarball = joinpath(static_dir, "artifact", artifact.hash)
 
-            _download(resource, tarball)
-            
             isnothing(p) || ProgressMeter.next!(p; showvalues = [(:artifact, artifact.hash)])
+            _download(resource, tarball)
         end
     end
 
@@ -131,6 +129,8 @@ function mirror_tarball(
         open(failed_logfile, "w") do io
             foreach(x->println(io, x), failed_record)
         end
+        @info("Mirror completed. There are $(length(failed_record)) fail-to-fetch resources.",
+            date=now(), registry=name, uuid=uuid, hash=latest_hash, upstreams=upstream_str)
     end
 
     return latest_hash
