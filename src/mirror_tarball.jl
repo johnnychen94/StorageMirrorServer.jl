@@ -57,7 +57,9 @@ function mirror_tarball(
     name = registry.name
     upstream_str = join(upstreams, ", ")
     function _download(resource, tarball; throw_warnings=true)
-        download_and_verify(upstreams, resource, tarball; http_parameters=http_parameters, throw_warnings=throw_warnings)
+        rst = download_and_verify(upstreams, resource, tarball; http_parameters=http_parameters, throw_warnings=throw_warnings)
+        rst || log_to_failure(resource, static_dir)
+        return rst
     end
 
     # 1. query latest registry hash
@@ -85,32 +87,32 @@ function mirror_tarball(
     @info "Start mirrorring" date=now() registry=name uuid=uuid hash=latest_hash num_versions=num_versions upstreams=upstream_str
 
     p = show_progress ? Progress(num_versions; desc="$name: Pulling packages: ") : nothing
-    ThreadPools.@qthreads for pkg in packages
+    ThreadPools.@qbthreads for pkg in packages
         for (ver, hash_info) in pkg.versions
             tree_hash = hash_info["git-tree-sha1"]
             resource = "/package/$(pkg.uuid)/$(tree_hash)"
             tarball = joinpath(static_dir, "package", pkg.uuid, tree_hash)
             
             try
-                _download(resource, tarball) || log_to_failure(resource, static_dir)
+                _download(resource, tarball)
             catch err
                 @warn err
             end
 
-            isnothing(p) || ProgressMeter.next!(p; showvalues = [(:package, pkg.name), (:version, ver)])
+            isnothing(p) || ProgressMeter.next!(p; showvalues = [(:package, pkg.name), (:version, ver), (:uuid, pkg.uuid), (:hash, tree_hash)])
         end
     end
 
     # 4. read and download `/artifact/$hash`
     artifacts = query_artifacts(static_dir)
     p = show_progress ? Progress(length(artifacts); desc="$name: Pulling artifacts: ") : nothing
-    ThreadPools.@qthreads for artifact in artifacts
+    ThreadPools.@qbthreads for artifact in artifacts
         if is_valid(artifact)
             resource = "/artifact/$(artifact.hash)"
             tarball = joinpath(static_dir, "artifact", artifact.hash)
 
             try
-                _download(resource, tarball) || log_to_failure(resource, static_dir)
+                _download(resource, tarball)
             catch err
                 @warn err
             end
@@ -128,7 +130,7 @@ function mirror_tarball(
         if retry_failed
             p = show_progress ? Progress(length(records); desc="$name: Re-pulling failed resources: ") : nothing
 
-            ThreadPools.@qthreads for resource in records
+            ThreadPools.@qbthreads for resource in records
                 if !isnothing(match(resource_re, resource))
                     tarball = joinpath(static_dir, resource[2:end]) # note: joinpath(pwd(), "/a") == "/a"
                     try
@@ -199,7 +201,7 @@ function query_artifacts(static_dir)
     artifact_glob_pattern = ["package", Regex(uuid_re), Regex(hash_re), r"[Julia]?Artifacts\.toml"]
 
     # incrementally extract Artifacts.toml
-    ThreadPools.@qthreads for pkg_tarball in glob(tarball_glob_pattern, static_dir)
+    ThreadPools.@qbthreads for pkg_tarball in glob(tarball_glob_pattern, static_dir)
         pkg_uuid, pkg_hash = match(package_re, pkg_tarball).captures
         cache_dir = joinpath(cache_root, "package", pkg_uuid, pkg_hash)
 
