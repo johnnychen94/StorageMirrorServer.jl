@@ -94,7 +94,7 @@ function mirror_tarball(
 
     num_versions = mapreduce(x -> length(x.versions), +, packages)
     @info "Start mirrorring" date=now() registry=name uuid=uuid hash=latest_hash num_versions=num_versions upstreams=upstream_str
-    skipped && @info "$(length(skipped_records)) resources are skipped during this build"
+    skipped && @info "$(length(skipped_records)) previously failed resources are skipped during this build"
 
     p = show_progress ? Progress(num_versions; desc="$name: Pulling packages: ") : nothing
     ThreadPools.@qbthreads for pkg in packages
@@ -137,7 +137,7 @@ function mirror_tarball(
         println(io, last_try_time)
         foreach(x->println(io, x), read_records(failed_logfile))
     end
-    @info("Mirror completed. There are $(length(failed_records)) fail-to-fetch resources.",
+    @info("Mirror completed. There are $(length(failed_records) - length(skipped_records)) new fail-to-fetch resources.",
         date=now(), registry=name, uuid=uuid, hash=latest_hash, upstreams=upstream_str)
 
     return latest_hash
