@@ -51,7 +51,14 @@ function mirror_tarball(
     name = registry.name
     failed_logfile = joinpath(static_dir, "failed_resources.txt")
     upstream_str = join(upstreams, ", ")
+
+    # Some resources vanishes and can never be downloaded, we skip them in the next 24 hours
+    last_try_time = query_last_try_datetime(failed_logfile) 
+    skipped = now() - last_try_time < Hour(24)
+    skipped_records = skipped ? read_records(failed_logfile) : Set()
     function _download(resource, tarball; throw_warnings=true)
+        resource in skipped_records && return false
+
         try
             rst = download_and_verify(upstreams, resource, tarball; http_parameters=http_parameters, throw_warnings=throw_warnings)
             rst || log_to_failure(resource, failed_logfile)
@@ -87,6 +94,7 @@ function mirror_tarball(
 
     num_versions = mapreduce(x -> length(x.versions), +, packages)
     @info "Start mirrorring" date=now() registry=name uuid=uuid hash=latest_hash num_versions=num_versions upstreams=upstream_str
+    skipped && @info "$(length(skipped_records)) resources are skipped during this build"
 
     p = show_progress ? Progress(num_versions; desc="$name: Pulling packages: ") : nothing
     ThreadPools.@qbthreads for pkg in packages
@@ -124,14 +132,13 @@ function mirror_tarball(
         rm(tarball; force=true)
     end
 
-    if isfile(failed_logfile)
-        failed_record = Set(readlines(failed_logfile))
-        open(failed_logfile, "w") do io
-            foreach(x->println(io, x), failed_record)
-        end
-        @info("Mirror completed. There are $(length(failed_record)) fail-to-fetch resources.",
-            date=now(), registry=name, uuid=uuid, hash=latest_hash, upstreams=upstream_str)
+    last_try_time = skipped ? last_try_time : now()
+    open(failed_logfile, "w") do io
+        println(io, last_try_time)
+        foreach(x->println(io, x), read_records(failed_logfile))
     end
+    @info("Mirror completed. There are $(length(failed_records)) fail-to-fetch resources.",
+        date=now(), registry=name, uuid=uuid, hash=latest_hash, upstreams=upstream_str)
 
     return latest_hash
 end
@@ -145,6 +152,29 @@ function log_to_failure(resource::AbstractString, logfile)
     catch err
         @warn err resource=resource
     end
+end
+
+function query_last_try_datetime(logfile)
+    isfile(logfile) || return DateTime(0)
+
+    line = readline(logfile)
+    try
+        return DateTime(line)
+    catch err
+        if err isa ArgumentError
+            return DateTime(0)
+        end
+        rethrow(err)
+    end
+end
+
+function read_records(logfile)
+    isfile(logfile) || return Set()
+    records = readlines(logfile)
+    isempty(records) && return Set()
+
+    # skip datetime line
+    Set(records[2:end])
 end
 
 function update_registries(registries_file, uuid, hash)
