@@ -174,7 +174,7 @@ function read_records(logfile)
     isempty(records) && return Set()
 
     # skip datetime line
-    Set(records[2:end])
+    sort(collect(Set(records[2:end])))
 end
 
 function update_registries(registries_file, uuid, hash)
