@@ -136,7 +136,11 @@ function mirror_tarball(
     failed_records = read_records(failed_logfile)
     open(failed_logfile, "w") do io
         println(io, last_try_time)
-        foreach(x->println(io, x), failed_records)
+        foreach(failed_records) do resource
+            if !isfile(joinpath(static_dir, resource[2:end])) # joinpath(pwd(), "/a") == "/a"
+                println(io, resource)
+            end
+        end
     end
     @info("Mirror completed. There are $(length(failed_records) - length(skipped_records)) new fail-to-fetch resources.",
         date=now(), registry=name, uuid=uuid, hash=latest_hash, upstreams=upstream_str)
