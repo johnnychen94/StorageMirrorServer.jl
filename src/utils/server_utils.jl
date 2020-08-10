@@ -189,7 +189,7 @@ function download_and_verify(
                         http_parameters...
                     )
             end
-
+            isnothing(response) && return false
             if response.status != 200
                 @debug "response status $(response.status)" server=server resource=resource
                 return false
