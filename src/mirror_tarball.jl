@@ -75,13 +75,17 @@ function mirror_tarball(
     latest_hash = query_latest_hash(registry, upstreams)
     if isnothing(latest_hash)
         @error "failed to get registry from upstreams" registry = registry.name upstreams=upstreams
-        return nothing
+        error("Stop mirroring.")
     end
 
     # 2. fetch registry tarball
     resource = "/registry/$(uuid)/$(latest_hash)"
     tarball = joinpath(static_dir, "registry", uuid, latest_hash)
-    _download(resource, tarball) || return nothing
+    rst = _download(resource, tarball)
+    if !rst
+        @error "failed to fetch registry tarball" uuid=uuid hash=latest_hash upstreams=upstreams
+        error("Stop mirroring.")
+    end
     
     # 3. read and download `/package/$uuid/$hash`
     packages = mktempdir() do tmpdir
