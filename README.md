@@ -51,4 +51,4 @@ This package is modified from the original implementation [gen_static.jl](https:
 [codecov-img]: https://codecov.io/gh/johnnychen94/StorageMirrorServer.jl/branch/master/graph/badge.svg
 [codecov-url]: https://codecov.io/gh/johnnychen94/StorageMirrorServer.jl
 
-[pkg-status][https://img.shields.io/badge/status-experimental-red]
+[pkg-status]: https://img.shields.io/badge/status-experimental-red
