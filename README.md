@@ -1,8 +1,9 @@
 # StorageMirrorServer
 
-[![Build Status](https://travis-ci.com/johnnychen94/StorageMirrorServer.jl.svg?branch=master)](https://travis-ci.com/johnnychen94/StorageMirrorServer.jl)
-[![Codecov](https://codecov.io/gh/johnnychen94/StorageMirrorServer.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/johnnychen94/StorageMirrorServer.jl)
-![status](https://img.shields.io/badge/status-experimental-red)
+[![Unit Test][action-img]][action-url]
+[![PkgEval][pkgeval-img]][pkgeval-url]
+[![Codecov][codecov-img]][codecov-url]
+![status][pkg-status]
 
 This package is used to set up a Julia Package Storage Server for mirror sites. The protocol details are
 described in https://github.com/JuliaLang/Pkg.jl/issues/1377.
@@ -38,3 +39,16 @@ This package is used to build the [BFSU](https://mirrors.bfsu.edu.cn/help/julia/
 ## Acknowledgement
 
 This package is modified from the original implementation [gen_static.jl](https://github.com/JuliaPackaging/PkgServer.jl/blob/2614c7d4d7fd8d422d0a82ffe5083a834be56bf8/bin/gen_static.jl).
+
+<!-- badges -->
+
+[action-img]: https://github.com/johnnychen94/StorageMirrorServer.jl/workflows/Unit%20test/badge.svg
+[action-url]: https://github.com/johnnychen94/StorageMirrorServer.jl/actions
+
+[pkgeval-img]: https://juliaci.github.io/NanosoldierReports/pkgeval_badges/S/StorageMirrorServer.svg
+[pkgeval-url]: https://juliaci.github.io/NanosoldierReports/pkgeval_badges/report.html
+
+[codecov-img]: https://codecov.io/gh/johnnychen94/StorageMirrorServer.jl/branch/master/graph/badge.svg
+[codecov-url]: https://codecov.io/gh/johnnychen94/StorageMirrorServer.jl
+
+[pkg-status][https://img.shields.io/badge/status-experimental-red]
