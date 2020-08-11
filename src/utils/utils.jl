@@ -1,9 +1,14 @@
-struct TimeoutException <: Exception end
+struct TimeoutException <: Exception
+    timeout::Float64 # seconds
+end
 
 """
     timeout_call(f, timeout; pollint=0.1)
 
-Execute function `f()` with a maximum timeout `timeout`.
+Execute function `f()` with a maximum timeout `timeout` seconds.
+
+An `TimeoutException(timeout)` exception will be thrown if it exceeds
+the maximum timeout. If `f()` exits with error, it will be rethrown.
 """
 function timeout_call(f::Function, timeout::Real; pollint=0.1)
     start = now()
@@ -13,13 +18,18 @@ function timeout_call(f::Function, timeout::Real; pollint=0.1)
 
     while !istaskdone(t)
         if (now()-start).value >= 1000timeout
-            schedule(t, TimeoutException(), error=true)
+            schedule(t, TimeoutException(timeout), error=true)
+            sleep(pollint) # wait a while for the task to update its state
             break
         end
         sleep(pollint)
     end
 
-    return t.result
+    if t.state == :failed
+        throw(t.exception)
+    else
+        return t.result
+    end
 end
 
 """
