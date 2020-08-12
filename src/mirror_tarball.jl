@@ -73,10 +73,7 @@ function mirror_tarball(
     # 1. query latest registry hash
     upstreams = normalize_upstream.(upstreams)
     latest_hash = query_latest_hash(registry, upstreams)
-    if isnothing(latest_hash)
-        @error "failed to get registry from upstreams" registry = registry.name upstreams=upstreams
-        error("Stop mirroring.")
-    end
+    isnothing(latest_hash) && error("Stop mirroring.")
 
     # 2. fetch registry tarball
     resource = "/registry/$(uuid)/$(latest_hash)"

@@ -10,34 +10,32 @@ const resource_re = Regex("""
 """, "x")
 
 """
-    query_latest_hash(registry, server)
+    query_latest_hash(registry, server; timeout=15000)
 
 Interrogate a storage server for a list of registries, match the response against the
 registries we are paying attention to, and return the matching hash.
 
 If registry is not avilable in server, then return `nothing`.
-"""
-function query_latest_hash(registry::RegistryMeta, server::AbstractString)
-    response = nothing
-    try
-        response = timeout_call(15) do
-            HTTP.get("$server/registries", retry=false)
-        end
-    catch err
-        err isa TimeoutException && return nothing
-        rethrow(err)
-    end
-    # FIXME: this is only a temporary workaround, I'm not very sure how response can be a DNSError after
-    # the try-catch blcok
-    response isa Exception && return nothing
-    isnothing(response) && return nothing
 
-    get_hash(IOBuffer(response.body), registry.uuid)
+Set `timeout=0` millseconds to disable timeout.
+"""
+function query_latest_hash(registry::RegistryMeta, server::AbstractString; timeout::Integer=15_000)
+    resource = "/registries"
+    f() = HTTP.get(server * resource)
+    try
+        response = timeout==0 ? f() : timeout_call(f, timeout//1000)
+        @debug "succeed to fetch resource" server=server resource=resource status=response.status
+        return get_hash(IOBuffer(response.body), registry.uuid)
+    catch err
+        @warn "failed to fetch resource" error=err server=server resource=resource
+        return nothing
+    end
 end
 
-function get_hash(io, uuid)
+get_hash(contents::AbstractString, uuid::AbstractString) = get_hash(IOBuffer(contents), uuid)
+function get_hash(io::IO, uuid::AbstractString)
     for line in eachline(io)
-        m = match(registry_re, line)
+        m = match(registry_re, strip(line))
         if m !== nothing
             matched_uuid, matched_hash = m.captures
             matched_uuid == uuid && return matched_hash
@@ -49,9 +47,12 @@ end
 """
     query_latest_hash(registry::RegistryMeta, upstreams::AbstractVector)
 
-Query `upstreams` and save the latest registry hash to each item of `registries`.
+Query `upstreams` for the latest registry hash. Return `nothing` if given registry isn't available
+in all upstreams.
 """
 function query_latest_hash(registry::RegistryMeta, upstreams::AbstractVector{<:AbstractString})
+    upstreams = normalize_upstream.(upstreams)
+
     # collect current registry hashes from servers
     uuid = registry.uuid
     hash_info = Dict{String, Vector{String}}() # Dict(hashA => [serverA, serverB], ...)
@@ -66,8 +67,8 @@ function query_latest_hash(registry::RegistryMeta, upstreams::AbstractVector{<:A
 
     # for each hash check what other servers know about it
     if isempty(hash_info)
-        # if none of the upstreams contains the registry we want to mirror
-        @warn "failed to find available registry" registry=registry.name upstreams=upstreams
+        # reach here if none of the upstreams contains the registry we want to mirror
+        @error "failed to find available registry" registry=registry.name uuid=registry.uuid upstreams=join(upstreams, ", ")
         return nothing
     end
 
@@ -101,20 +102,23 @@ end
 
 
 """
-    url_exists(url)
+    url_exists(url; timeout=15000)
 
 Send a `HEAD` request to the specified URL, returns `true` if the response is HTTP 200.
+
+Set `timeout=0` millseconds to disable timeout.
 """
-function url_exists(url::AbstractString)
+function url_exists(url::AbstractString; timeout::Integer=15000)
+    startswith(url, r"https?://") || throw(ArgumentError("invalid url $url, should be HTTP(S) protocol."))
+
+    f() = HTTP.request("HEAD", url, status_exception=false)
     try
-        response = timeout_call(10) do
-            HTTP.request("HEAD", url, status_exception = false)
-        end
-        isnothing(response) && return false
+        response = timeout==0 ? f() : timeout_call(f, timeout//1000)
+        @debug "succeed to send HEAD request" response=response url=url
         return response.status == 200
     catch err
-        err isa TimeoutException && return false
-        rethrow(err)
+        @warn "failed to send HEAD request" error=err url=url
+        return false
     end
 end
 
