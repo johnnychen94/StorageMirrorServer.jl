@@ -21,6 +21,11 @@ Set `timeout=0` millseconds to disable timeout.
 """
 function query_latest_hash(registry::RegistryMeta, server::AbstractString; timeout::Integer=15_000)
     resource = "/registries"
+    if !url_exists(server * resource)
+        @warn "resource doesn't exists" server=server resource=resource
+        return nothing
+    end
+
     f() = HTTP.get(server * resource)
     try
         response = timeout==0 ? f() : timeout_call(f, timeout//1000)
