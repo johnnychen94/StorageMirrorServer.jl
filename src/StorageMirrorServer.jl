@@ -15,6 +15,7 @@ using TranscodingStreams: TranscodingStream
 using HTTP
 
 using ThreadPools
+using IterTools
 
 using Dates
 using ProgressMeter
@@ -23,9 +24,9 @@ compress(io::IO) = TranscodingStream(GzipCompressor(level = 9), io)
 decompress(io::IO) = TranscodingStream(GzipDecompressor(), io)
 
 const default_http_parameters = Dict(
-    :retry => false,
-    :retries => 1,
-    :timeout => 1200,
+    :retry => true,
+    :retries => 2,
+    :timeout => 7200,
 )
 
 export mirror_tarball, read_packages
