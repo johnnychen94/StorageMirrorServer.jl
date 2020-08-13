@@ -112,16 +112,17 @@ function mirror_tarball(
     skipped && @info "$(length(skipped_records)) previously failed resources are skipped during this build"
 
     p = show_progress ? Progress(num_versions; desc="$name: Pulling packages: ") : nothing
-    ThreadPools.@qbthreads for pkg in packages
-        @sync for (ver, hash_info) in pkg.versions
+    for pkg in packages
+        for (ver, hash_info) in pkg.versions
+            begin
             tree_hash = hash_info["git-tree-sha1"]
             resource = "/package/$(pkg.uuid)/$(tree_hash)"
             tarball = joinpath(static_dir, "package", pkg.uuid, tree_hash)
-
-            show_progress && @info "downloading package..." package=pkg.name uuid=pkg.uuid hash=tree_hash resource=resource
-            @async _download(resource, tarball)
+                show_progress && @info "downloading package..." package=pkg.name uuid=pkg.uuid hash=tree_hash resource=resource tarball = tarball
+                _download(resource, tarball)
+                isnothing(p) || ProgressMeter.next!(p; showvalues = [(:package, pkg.name), (:version, ver), (:uuid, pkg.uuid), (:hash, tree_hash)])
         end
-        isnothing(p) || ProgressMeter.next!(p; showvalues = [(:package, pkg.name)])
+    end
     end
 
     # 4. read and download `/artifact/$hash`
@@ -131,17 +132,16 @@ function mirror_tarball(
     @info "found $(length(artifacts)) new artifacts"
     p = show_progress ? Progress(length(artifacts); desc="$name: Pulling artifacts: ") : nothing
     batch_size = min(length(artifacts), max(20, ceil(Int, length(artifacts)/(5*Threads.nthreads()))))
-    ThreadPools.@qbthreads for artifact_batch in partition(artifacts, batch_size)
-        @sync for artifact in artifact_batch
+    for artifact in artifacts
             if is_valid(artifact)
-                resource = "/artifact/$(artifact.hash)"
-                tarball = joinpath(static_dir, "artifact", artifact.hash)
+            tree_hash = artifact.hash
+            resource = "/artifact/$(tree_hash)"
+            tarball = joinpath(static_dir, "artifact", tree_hash)
 
-                @info "downloading artifact..." hash=artifact.hash resource=resource
-                @async _download(resource, tarball)
-            end
+            @info "downloading artifact..." hash=tree_hash resource=resource tarball=tarball
+            _download(resource, tarball)
+            isnothing(p) || ProgressMeter.next!(p; showvalues = [(:artifact, tree_hash), (:resource, resource), (:tarball, tarball)])
         end
-        isnothing(p) || ProgressMeter.next!(p; showvalues = [(:artifact, artifact.hash)])
     end
 
     # update /registries after updates
