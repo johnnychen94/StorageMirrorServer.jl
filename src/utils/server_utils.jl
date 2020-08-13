@@ -22,17 +22,17 @@ Set `timeout=0` millseconds to disable timeout.
 function query_latest_hash(registry::RegistryMeta, server::AbstractString; timeout::Integer=15_000)
     resource = "/registries"
     if !url_exists(server * resource)
-        @warn "resource doesn't exists" server=server resource=resource
+        @warn "resource doesn't exists" resource=server*resource
         return nothing
     end
 
     f() = HTTP.get(server * resource)
     try
         response = timeout==0 ? f() : timeout_call(f, timeout//1000)
-        @debug "succeed to fetch resource" server=server resource=resource status=response.status
+        @debug "succeed to fetch resource" resource=server*resource status=response.status
         return get_hash(IOBuffer(response.body), registry.uuid)
     catch err
-        @warn "failed to fetch resource" error=err server=server resource=resource
+        @warn "failed to fetch resource" error=err resource=server*resource
         return nothing
     end
 end
@@ -107,13 +107,13 @@ end
 
 
 """
-    url_exists(url; timeout=15000)
+    url_exists(url; timeout=120_000)
 
 Send a `HEAD` request to the specified URL, returns `true` if the response is HTTP 200.
 
 Set `timeout=0` millseconds to disable timeout.
 """
-function url_exists(url::AbstractString; timeout::Integer=15000)
+function url_exists(url::AbstractString; timeout::Integer=120_000)
     startswith(url, r"https?://") || throw(ArgumentError("invalid url $url, should be HTTP(S) protocol."))
 
     f() = HTTP.request("HEAD", url, status_exception=false)
@@ -170,7 +170,6 @@ function download_and_verify(
         http_parameters::Dict{Symbol, Any} = Dict{Symbol, Any}(),
 )
     http_parameters = merge(default_http_parameters, http_parameters)
-    http_parameters[:status_exception] = false
     timeout = http_parameters[:timeout]
     delete!(http_parameters, :timeout)
 
@@ -179,7 +178,7 @@ function download_and_verify(
     end
 
     if isnothing(hash)
-        @warn "bad resource: valid hash not found" server=server resource=resource tarball=tarball
+        @warn "bad resource: valid hash not found" resource=server*resource tarball=tarball
         return false
     end
 
@@ -187,28 +186,22 @@ function download_and_verify(
     # exists. This is okay if we can make sure the file isn't created when download/creation
     # of tarball fails
     isfile(tarball) && return true
-    url_exists(server * resource) || return false
+    if !url_exists(server * resource)
+        @warn "failed to find resource, URL doesn't exists" url=server*resource
+        return false
+    end
 
     write_atomic(tarball) do temp_file, io
         try
             response = timeout_call(timeout) do 
-                    HTTP.get(
+                    HTTP.get(server * resource;
                         response_stream = io,
-                        server * resource;
                         http_parameters...
                     )
             end
-            isnothing(response) && return false
-            if response.status != 200
-                @debug "response status $(response.status)" server=server resource=resource
-                return false
-            end
         catch err
-            if err isa TimeoutException
-                @warn "timeout when fetching resource" resource=server * resource
-                return false
-            end
-            rethrow(err)
+            @warn "failed to fetch resource" error=err resource=server*resource
+            return false
         end
 
         # If we're given a hash, then check tarball git hash
@@ -236,7 +229,7 @@ function download_and_verify(
                     return true
                 end
 
-                @warn "resource hash mismatch" server=server resource=resource hash=tree_hash
+                @warn "resource hash mismatch" resource=server*resource reference_hash=hash actual_hash=tree_hash
                 return false
             end
         end
@@ -258,9 +251,13 @@ function download_and_verify(
 
     # TODO: async this procedure
     for server in servers
-        download_and_verify(server, resource, path; kwargs...) && return true
+        if download_and_verify(server, resource, path; kwargs...) !== false
+            return true
+        else
+            throw_warnings && @warn "failed to download resource" resource=server*resource
+        end
     end
 
-    throw_warnings && @warn "failed to download resource" servers=join(servers, ", ") resource=resource
+    # if we've tried all the upstreams and none of them return a true, then return false
     return false
 end

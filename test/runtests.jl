@@ -1,6 +1,7 @@
 using StorageMirrorServer
 using HTTP
 
+using Tar
 using Test
 using Dates
 using Random
@@ -16,4 +17,5 @@ include("test_utils.jl")
 @testset "StorageServer" begin
     include("tst_utils.jl")
     include("tst_server_utils.jl")
+    include("tst_mirror_tarball.jl")
 end

@@ -8,6 +8,7 @@ CodecZlib = "944b1d66-785c-5afd-91f1-9de20f533193"
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
 Glob = "c27321d9-0574-5035-807b-f59d2c89b15c"
 HTTP = "cd3eb016-35fb-5094-929b-558a96fad6f3"
+IterTools = "c8e1da08-722c-5040-9ed9-7db0dc04731e"
 Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
 ProgressMeter = "92933f4c-e287-5a05-a399-4b506db050ca"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
@@ -17,9 +18,9 @@ TranscodingStreams = "3bb67fe8-82b1-5028-8e26-92a6c54297fa"
 
 [compat]
 CodecZlib = "0.7"
-FFTW_jll = "= 3.3.9"
 Glob = "1.3"
 HTTP = "0.8.14"
+IterTools = "1.3"
 ProgressMeter = "1"
 Tar = "1.3"
 ThreadPools = "1.1"
@@ -27,10 +28,9 @@ TranscodingStreams = "0.9.5"
 julia = "1.4"
 
 [extras]
-FFTW_jll = "f5851436-0d7a-5f13-b9de-f02708fd171a"
 SimpleMock = "a896ed2c-15a5-4479-b61d-a0e88e2a1d25"
 Suppressor = "fd094767-a336-5f1f-9728-57cf17d0bbfb"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["SimpleMock", "Suppressor", "Test", "FFTW_jll"]
+test = ["SimpleMock", "Suppressor", "Test"]

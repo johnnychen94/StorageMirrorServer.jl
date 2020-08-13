@@ -1,4 +1,5 @@
 using StorageMirrorServer: get_hash, RegistryMeta, query_latest_hash, url_exists
+using StorageMirrorServer: download_and_verify
 using StorageMirrorServer: timeout_call, TimeoutException
 
 @testset "normalize_upstream" begin
@@ -82,4 +83,52 @@ end
             @test occursin("failed to find available registry", err_msg)
         end
     end
+end
+
+@testset "download_and_verify" begin
+    tmp_testdir = mktempdir()
+
+    server = "https://us-east.storage.juliahub.com"
+    resource_list = [
+        "/artifact/ff8ad169326afd41d46f507a960c1717f4ed1a47",
+        "/artifact/f8eb2f3aa430c1ea80c46779ba89580372f0f0db",
+        "/package/a603d957-0e48-4f86-8fbd-0b7bc66df689/e4581e3fadda3824e0df04396c85258a2107035d",
+        "/package/22bb73d7-edb2-5785-ba1e-7d60d6824784/41731998eb760f9c5e4acc911c9fb33c9643365f",
+    ]
+    for resource in resource_list
+        tarball = joinpath(tmp_testdir, resource[2:end])
+        @test download_and_verify(server, resource, tarball)
+        @test isfile(tarball)
+
+        rm(tarball; force=true)
+        @test download_and_verify([server], resource, tarball)
+        @test isfile(tarball)
+        rm(tarball; force=true)
+    end
+
+    # invalid hash
+    resource = "/artifact/0000"
+    tarball = joinpath(tmp_testdir, resource[2:end])
+    @test @suppress_err !download_and_verify(server, resource, tarball)
+    err_msg = @capture_err download_and_verify(server, resource, tarball)
+    @test occursin("bad resource: valid hash not found", err_msg)
+
+    # 404 test
+    resource = "/artifact/0000000000000000000000000000000000000000"
+    tarball = joinpath(tmp_testdir, resource[2:end])
+    @test @suppress_err !download_and_verify(server, resource, tarball)
+    err_msg = @capture_err download_and_verify(server, resource, tarball)
+    @test occursin("failed to find resource, URL doesn't exists", err_msg)
+
+    # timeout test
+    resource = resource_list[1]
+    tarball = joinpath(tmp_testdir, resource[2:end])
+    config = Dict{Symbol, Any}(:timeout => 0.001)
+    @test @suppress_err !download_and_verify(server, resource, tarball; http_parameters=config)
+    err_msg = @capture_err download_and_verify(server, resource, tarball; http_parameters=config)
+    @test occursin("failed to fetch resource", err_msg)
+    @test occursin("TimeoutException(0.001)", err_msg)
+    @test !isfile(tarball)
+
+    # TODO: test hash mismatch
 end
