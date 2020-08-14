@@ -65,6 +65,7 @@ function mirror_tarball(
         end
 
         try
+            show_progress && @info "downloading resource..." resource=resource tarball=tarball
             rst = download_and_verify(upstreams, resource, tarball; http_parameters=http_parameters, throw_warnings=throw_warnings)
             if rst !== false
                 return true
@@ -76,7 +77,7 @@ function mirror_tarball(
         catch err
             throw_warnings && @warn err resource=resource
             rm(tarball; force=true)
-            @info "skip resource fetching in next $skip_duration hours" resource
+            show_progress && @info "skip resource fetching in next $skip_duration hours" resource
             log_to_failure(resource, failed_logfile)
             return false
         end
@@ -120,7 +121,6 @@ function mirror_tarball(
             tree_hash = hash_info["git-tree-sha1"]
             resource = "/package/$(pkg.uuid)/$(tree_hash)"
             tarball = joinpath(static_dir, "package", pkg.uuid, tree_hash)
-            show_progress && @info "downloading package..." package=pkg.name uuid=pkg.uuid hash=tree_hash resource=resource tarball = tarball
             _download(resource, tarball)
             isnothing(p) || ProgressMeter.next!(p; showvalues = [(:package, pkg.name), (:version, ver), (:uuid, pkg.uuid), (:hash, tree_hash)])
         end
@@ -139,7 +139,6 @@ function mirror_tarball(
             resource = "/artifact/$(tree_hash)"
             tarball = joinpath(static_dir, "artifact", tree_hash)
 
-            @info "downloading artifact..." hash=tree_hash resource=resource tarball=tarball
             _download(resource, tarball)
             isnothing(p) || ProgressMeter.next!(p; showvalues = [(:artifact, tree_hash), (:resource, resource), (:tarball, tarball)])
         end
