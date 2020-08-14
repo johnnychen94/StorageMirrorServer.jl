@@ -10,21 +10,20 @@ const resource_re = Regex("""
 """, "x")
 
 """
-    query_latest_hash(registry, server; timeout=30_000)
+    query_latest_hash(registry, server)
 
 Interrogate a storage server for a list of registries, match the response against the
 registries we are paying attention to, and return the matching hash.
 
 If registry is not avilable in server, then return `nothing`.
-
-Set `timeout=0` millseconds to disable timeout.
 """
-function query_latest_hash(registry::RegistryMeta, server::AbstractString; timeout::Integer=30_000)
+function query_latest_hash(registry::RegistryMeta, server::AbstractString)
     resource = "/registries"
 
-    f() = HTTP.get(server * resource)
     try
-        response = timeout==0 ? f() : timeout_call(f, timeout//1000)
+        response = timeout_call(30) do
+            HTTP.get(server * resource)
+        end
         @debug "succeed to fetch resource" resource=server*resource status=response.status
         return get_hash(IOBuffer(response.body), registry.uuid)
     catch err

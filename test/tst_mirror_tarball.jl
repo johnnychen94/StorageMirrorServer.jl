@@ -8,12 +8,12 @@ using StorageMirrorServer: timeout_call
     # rm(tmp_testdir; force=true, recursive=true)
 
     registry = RegistryMeta("General", "23338594-aafe-5451-b93e-139f81909106", "https://github.com/JuliaRegistries/General")
-    server = ["https://mirrors.bfsu.edu.cn/julia", "https://mirrors.sjtug.sjtu.edu.cn/julia", "https://us-east.storage.juliahub.com", "https://kr.storage.juliahub.com"]
-    registry_hash = query_latest_hash(registry, server)
+    upstreams = ["https://mirrors.bfsu.edu.cn/julia", "https://mirrors.sjtug.sjtu.edu.cn/julia", "https://us-east.storage.juliahub.com", "https://kr.storage.juliahub.com"]
+    registry_hash = query_latest_hash(registry, upstreams)
 
     tarball = joinpath(tmp_testdir, "registry", registry.uuid, registry_hash)
     resource = "/registry/$(registry.uuid)/$(registry_hash)"
-    download_and_verify(server, resource, tarball)
+    download_and_verify(upstreams, resource, tarball)
     @test isfile(tarball)
 
     packages = mktempdir() do tmpdir
@@ -27,7 +27,7 @@ using StorageMirrorServer: timeout_call
     end
 
     @time rst_hash = timeout_call(1200) do
-        mirror_tarball(registry, server, tmp_testdir; packages=packages)
+        mirror_tarball(registry, upstreams, tmp_testdir; packages=packages)
     end
     @test rst_hash == registry_hash
 
