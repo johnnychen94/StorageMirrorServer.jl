@@ -248,30 +248,42 @@ function download_and_verify(
         if length(servers) == 1
             download_and_verify(servers[1], resource, tarball; kwargs...)
         else
-            @sync for server in servers
+            for server in servers
                 task = @async begin
-                    sleep(rand()) # randomly permute the server
-
                     if url_exists(server*resource; timeout=30_000, throw_warnings=false)
                         # the first that hits here start downloading
                         if trylock(race_lock)
-                            @info "start downloading resource..." resource=server*resource tarball=tarball
-                            download_and_verify(server, resource, tarball; kwargs...)
+                            retval = download_and_verify(server, resource, tarball; kwargs...)
                             unlock(race_lock)
-                            stop_threads(task_pool) # once a task succeed, kill all other hanging tasks
+                            retval
                         end
                     end
                 end
                 push!(task_pool, task)
             end
+
+            try
+                timeout_call(default_http_parameters[:timeout]) do
+                    while true
+                        if any(t->istaskdone(t) && t.result === true, task_pool)
+                            interrupt_task(task_pool)
+                            return true
+                        end
+                        sleep(0.1)
+                    end
+                end
+            catch err
+                @warn err
+                return false
+            end 
         end
     catch e
         throw_warnings && @warn "fail to download resource" err=e resource=resource tarball=tarball upstreams=join(servers, ", ")
-        stop_threads(task_pool)
+        interrupt_task(task_pool)
         return false
     end
 
-    stop_threads(task_pool)
+    interrupt_task(task_pool)
     if isfile(tarball)
         return true
     else
@@ -280,7 +292,7 @@ function download_and_verify(
     end
 end
 
-function stop_threads(task_pool)
+function interrupt_task(task_pool)
     isempty(task_pool) && return nothing
     for t in task_pool
         @eval :(Base.throwto(t, InterruptException()))
