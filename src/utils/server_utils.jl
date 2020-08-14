@@ -10,7 +10,7 @@ const resource_re = Regex("""
 """, "x")
 
 """
-    query_latest_hash(registry, server; timeout=15000)
+    query_latest_hash(registry, server; timeout=30_000)
 
 Interrogate a storage server for a list of registries, match the response against the
 registries we are paying attention to, and return the matching hash.
@@ -19,12 +19,8 @@ If registry is not avilable in server, then return `nothing`.
 
 Set `timeout=0` millseconds to disable timeout.
 """
-function query_latest_hash(registry::RegistryMeta, server::AbstractString; timeout::Integer=15_000)
+function query_latest_hash(registry::RegistryMeta, server::AbstractString; timeout::Integer=30_000)
     resource = "/registries"
-    if !url_exists(server * resource)
-        @warn "resource doesn't exists" resource=server*resource
-        return nothing
-    end
 
     f() = HTTP.get(server * resource)
     try
@@ -108,13 +104,13 @@ end
 
 
 """
-    url_exists(url; timeout=120_000)
+    url_exists(url; timeout=30_000)
 
 Send a `HEAD` request to the specified URL, returns `true` if the response is HTTP 200.
 
 Set `timeout=0` millseconds to disable timeout.
 """
-function url_exists(url::AbstractString; timeout::Integer=120_000, throw_warnings=true)
+function url_exists(url::AbstractString; timeout::Integer=30_000, throw_warnings=true)
     startswith(url, r"https?://") || throw(ArgumentError("invalid url $url, should be HTTP(S) protocol."))
 
     f() = HTTP.request("HEAD", url, status_exception=false)

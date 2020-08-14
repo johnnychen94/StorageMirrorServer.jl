@@ -26,7 +26,7 @@ using StorageMirrorServer: timeout_call
         end
     end
 
-    rst_hash = timeout_call(1200) do
+    @time rst_hash = timeout_call(1200) do
         mirror_tarball(registry, server, tmp_testdir; packages=packages)
     end
     @test rst_hash == registry_hash

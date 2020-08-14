@@ -17,7 +17,7 @@ Set environment variable `JULIA_NUM_THREADS` to enable multi-threads.
 - `http_parameters::Dict{Symbol, Any}`: any parameters that need to pass to `HTTP.get` when fetching resources.
 - `packages::AbstractVector{Package}`: manually create and specify a set of packages that needed to be stored. This
    can be used to build only a partial of the complete storage. Check [`read_packages`](@ref read_packages) for how
-   to build packages info. (Experimental)
+   to build packages info.
 - `show_progress::Bool`: `true` to show an additional progress meter. By default it is `true`.
 
 """
@@ -114,15 +114,13 @@ function mirror_tarball(
     p = show_progress ? Progress(num_versions; desc="$name: Pulling packages: ") : nothing
     for pkg in packages
         for (ver, hash_info) in pkg.versions
-            begin
             tree_hash = hash_info["git-tree-sha1"]
             resource = "/package/$(pkg.uuid)/$(tree_hash)"
             tarball = joinpath(static_dir, "package", pkg.uuid, tree_hash)
-                show_progress && @info "downloading package..." package=pkg.name uuid=pkg.uuid hash=tree_hash resource=resource tarball = tarball
-                _download(resource, tarball)
-                isnothing(p) || ProgressMeter.next!(p; showvalues = [(:package, pkg.name), (:version, ver), (:uuid, pkg.uuid), (:hash, tree_hash)])
+            show_progress && @info "downloading package..." package=pkg.name uuid=pkg.uuid hash=tree_hash resource=resource tarball = tarball
+            _download(resource, tarball)
+            isnothing(p) || ProgressMeter.next!(p; showvalues = [(:package, pkg.name), (:version, ver), (:uuid, pkg.uuid), (:hash, tree_hash)])
         end
-    end
     end
 
     # 4. read and download `/artifact/$hash`
@@ -133,7 +131,7 @@ function mirror_tarball(
     p = show_progress ? Progress(length(artifacts); desc="$name: Pulling artifacts: ") : nothing
     batch_size = min(length(artifacts), max(20, ceil(Int, length(artifacts)/(5*Threads.nthreads()))))
     for artifact in artifacts
-            if is_valid(artifact)
+        if is_valid(artifact)
             tree_hash = artifact.hash
             resource = "/artifact/$(tree_hash)"
             tarball = joinpath(static_dir, "artifact", tree_hash)
