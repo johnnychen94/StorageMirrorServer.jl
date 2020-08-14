@@ -116,8 +116,12 @@ function url_exists(url::AbstractString; timeout::Integer=30_000, throw_warnings
     try
         response = timeout==0 ? f() : timeout_call(f, timeout//1000)
         throw_warnings && @debug "succeed to send HEAD request" response=response url=url
-        return response.status == 200
+        # FIXME: unsure why could response be nothing
+        return !isnothing(response) && response.status == 200
     catch err
+        # FIXME: here we temporarily disable unlock warnings as the tasks are interrupted manually
+        err isa ErrorException && occursin("unlock from wrong thread", err.msg) && return false
+
         throw_warnings && @warn "failed to send HEAD request" error=err url=url
         return false
     end
@@ -250,14 +254,16 @@ function download_and_verify(
             download_and_verify(servers[1], resource, tarball; kwargs...)
         else
             for server in servers
-                task = @async begin
-                    if url_exists(server*resource; timeout=30_000, throw_warnings=false)
+                task = Threads.@spawn begin
+                    if url_exists(server*resource; timeout=30_000, throw_warnings=throw_warnings)
                         # the first that hits here start downloading
                         if trylock(race_lock)
                             retval = download_and_verify(server, resource, tarball; kwargs...)
                             unlock(race_lock)
                             retval
                         end
+                    else
+                        throw_warnings && @warn "resource does not exist" resource=server*resource
                     end
                 end
                 push!(task_pool, task)
@@ -290,11 +296,10 @@ function download_and_verify(
         return false
     end
 
-    interrupt_task(task_pool)
     if isfile(tarball)
         return true
     else
-        throw_warnings && @warn "fail to download resource" resource=resource tarball=tarball upstreams=join(servers, ", ")
+        throw_warnings && @warn "unable to download resource from all given upstreams" resource=resource tarball=tarball upstreams=join(servers, ", ")
         return false
     end
 end
