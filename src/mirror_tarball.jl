@@ -28,7 +28,8 @@ function mirror_tarball(
         upstreams::AbstractVector,
         static_dir::AbstractString;
         http_parameters::Dict{Symbol, Any} = Dict{Symbol, Any}(),
-        packages::AbstractVector = [],
+        packages::Union{AbstractVector, Nothing} = nothing,
+        registry_hash::Union{AbstractString, Nothing} = nothing,
         show_progress = true,
 )
     ### Except for the complex error handling strategy, the mirror routine
@@ -83,7 +84,7 @@ function mirror_tarball(
 
     # 1. query latest registry hash
     upstreams = normalize_upstream.(upstreams)
-    latest_hash = query_latest_hash(registry, upstreams)
+    latest_hash = isnothing(registry_hash) ? query_latest_hash(registry, upstreams) : registry_hash
     if isnothing(latest_hash)
         @error "failed to query the latest registry hash" uuid=uuid hash=latest_hash upstreams=upstreams
         error("stop mirroring.")
@@ -99,13 +100,15 @@ function mirror_tarball(
     end
     
     # 3. read and download `/package/$uuid/$hash`
-    packages = isempty(packages) ? mktempdir() do tmpdir
-        open(tarball, "r") do io
-            Tar.extract(decompress(io), tmpdir)
+    if isnothing(packages)
+        packages = mktempdir() do tmpdir
+            open(tarball, "r") do io
+                Tar.extract(decompress(io), tmpdir)
+            end
+            # only returns packages that are not stored in static_dir
+            read_packages(tmpdir; fetch_full_registry=false, static_dir=static_dir)
         end
-        # only returns packages that are not stored in static_dir
-        read_packages(tmpdir; fetch_full_registry=false, static_dir=static_dir)
-    end : packages
+    end
 
     num_versions = mapreduce(x -> length(x.versions), +, packages)
     @info "Start mirrorring" date=now() registry=name uuid=uuid hash=latest_hash num_versions=num_versions upstreams=upstream_str
@@ -198,7 +201,11 @@ function read_records(logfile)
     isempty(records) && return Set()
 
     # skip datetime line
-    sort(collect(Set(records[2:end])))
+    if query_last_try_datetime(logfile) != DateTime(0)
+        records = records[2:end]
+    end
+    
+    sort(collect(Set(records)))
 end
 
 function update_registries(registries_file, uuid, hash)

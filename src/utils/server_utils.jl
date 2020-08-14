@@ -266,11 +266,17 @@ function download_and_verify(
             try
                 timeout_call(default_http_parameters[:timeout]) do
                     while true
+                        sleep(0.1)
+
                         if any(t->istaskdone(t) && t.result === true, task_pool)
                             interrupt_task(task_pool)
                             return true
                         end
-                        sleep(0.1)
+
+                        if all(istaskdone, task_pool)
+                            @warn "fail to download resource" resource=resource tarball=tarball upstreams=join(servers, ", ")
+                            return false
+                        end
                     end
                 end
             catch err
