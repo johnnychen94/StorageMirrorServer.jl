@@ -4,9 +4,11 @@ using StorageMirrorServer: timeout_call
 
 @testset "mirror_tarball" begin
     tmp_testdir = mktempdir()
+    # tmp_testdir = "../julia"
+    # rm(tmp_testdir; force=true, recursive=true)
 
     registry = RegistryMeta("General", "23338594-aafe-5451-b93e-139f81909106", "https://github.com/JuliaRegistries/General")
-    server = "https://us-east.storage.juliahub.com"
+    server = ["https://us-east.storage.juliahub.com", "https://kr.storage.juliahub.com"]
     registry_hash = query_latest_hash(registry, server)
 
     tarball = joinpath(tmp_testdir, "registry", registry.uuid, registry_hash)
@@ -25,7 +27,7 @@ using StorageMirrorServer: timeout_call
     end
 
     rst_hash = timeout_call(1200) do
-        mirror_tarball(registry, [server], tmp_testdir; packages=packages)
+        mirror_tarball(registry, server, tmp_testdir; packages=packages)
     end
     @test rst_hash == registry_hash
 

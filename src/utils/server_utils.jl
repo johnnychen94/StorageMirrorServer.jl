@@ -62,12 +62,14 @@ function query_latest_hash(registry::RegistryMeta, upstreams::AbstractVector{<:A
     uuid = registry.uuid
     hash_info = Dict{String, Vector{String}}() # Dict(hashA => [serverA, serverB], ...)
     servers = String[] # [serverA, serverB]
-    for server in upstreams
-        hash = query_latest_hash(registry, server)
-        isnothing(hash) && continue
-
-        push!(get!(hash_info, hash, String[]), server)
-        push!(servers, server)
+    @sync for server in upstreams
+        @async begin
+            hash = query_latest_hash(registry, server)
+            if !isnothing(hash)
+                push!(get!(hash_info, hash, String[]), server)
+                push!(servers, server)
+            end
+        end
     end
 
     # for each hash check what other servers know about it
@@ -79,10 +81,9 @@ function query_latest_hash(registry::RegistryMeta, upstreams::AbstractVector{<:A
 
     # a hash might be known to many upstreams
     for (hash, hash_servers) in hash_info
-        for server in servers
+        @sync for server in servers
             server in hash_servers && continue
-            url_exists("$server/registry/$uuid/$hash") || continue
-            push!(hash_servers, server)
+            @async url_exists("$server/registry/$uuid/$hash") && push!(hash_servers, server)
         end
     end
 
@@ -113,16 +114,16 @@ Send a `HEAD` request to the specified URL, returns `true` if the response is HT
 
 Set `timeout=0` millseconds to disable timeout.
 """
-function url_exists(url::AbstractString; timeout::Integer=120_000)
+function url_exists(url::AbstractString; timeout::Integer=120_000, throw_warnings=true)
     startswith(url, r"https?://") || throw(ArgumentError("invalid url $url, should be HTTP(S) protocol."))
 
     f() = HTTP.request("HEAD", url, status_exception=false)
     try
         response = timeout==0 ? f() : timeout_call(f, timeout//1000)
-        @debug "succeed to send HEAD request" response=response url=url
+        throw_warnings && @debug "succeed to send HEAD request" response=response url=url
         return response.status == 200
     catch err
-        @warn "failed to send HEAD request" error=err url=url
+        throw_warnings && @warn "failed to send HEAD request" error=err url=url
         return false
     end
 end
@@ -186,10 +187,6 @@ function download_and_verify(
     # exists. This is okay if we can make sure the file isn't created when download/creation
     # of tarball fails
     isfile(tarball) && return true
-    if !url_exists(server * resource)
-        @warn "failed to find resource, URL doesn't exists" url=server*resource
-        return false
-    end
 
     write_atomic(tarball) do temp_file, io
         try
@@ -244,20 +241,52 @@ end
 function download_and_verify(
         servers::AbstractVector{String},
         resource::String,
-        path::String;
+        tarball::String;
         throw_warnings = true,
         kwargs...
 )
+    race_lock = ReentrantLock()
+    task_pool = []
 
-    # TODO: async this procedure
-    for server in servers
-        if download_and_verify(server, resource, path; kwargs...) !== false
-            return true
+    try
+        if length(servers) == 1
+            download_and_verify(servers[1], resource, tarball; kwargs...)
         else
-            throw_warnings && @warn "failed to download resource" resource=server*resource
+            @sync for server in servers
+                task = @async begin
+                    sleep(rand()) # randomly permute the server
+
+                    if url_exists(server*resource; timeout=30_000, throw_warnings=false)
+                        # the first that hits here start downloading
+                        if trylock(race_lock)
+                            @info "start downloading resource..." resource=server*resource tarball=tarball
+                            download_and_verify(server, resource, tarball; kwargs...)
+                            unlock(race_lock)
+                            stop_threads(task_pool) # once a task succeed, kill all other hanging tasks
+                        end
+                    end
+                end
+                push!(task_pool, task)
+            end
         end
+    catch e
+        throw_warnings && @warn "fail to download resource" err=e resource=resource tarball=tarball upstreams=join(servers, ", ")
+        stop_threads(task_pool)
+        return false
     end
 
-    # if we've tried all the upstreams and none of them return a true, then return false
-    return false
+    stop_threads(task_pool)
+    if isfile(tarball)
+        return true
+    else
+        throw_warnings && @warn "fail to download resource" resource=resource tarball=tarball upstreams=join(servers, ", ")
+        return false
+    end
+end
+
+function stop_threads(task_pool)
+    isempty(task_pool) && return nothing
+    for t in task_pool
+        @eval :(Base.throwto(t, InterruptException()))
+    end
 end
