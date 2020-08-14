@@ -41,7 +41,7 @@ upstreams = [
 end
 
 @testset "url_exists" begin
-    @test url_exists("https://pkg.julialang.org/registries"; timeout=0)
+    # @test url_exists("https://pkg.julialang.org/registries"; timeout=0)
     @test !url_exists("https://pkg.julialang.org/registries_1234")
     mock(timeout_call => Mock((f, x) -> throw(TimeoutException(0.001)))) do _timeout_call
         @test @suppress_err !url_exists("https://pkg.julialang.org/registries"; timeout=1)
