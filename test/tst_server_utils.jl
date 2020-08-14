@@ -97,13 +97,8 @@ end
     ]
     for resource in resource_list
         tarball = joinpath(tmp_testdir, resource[2:end])
-        @test download_and_verify(server, resource, tarball)
+        @test download_and_verify(upstreams, resource, tarball)
         @test isfile(tarball)
-
-        rm(tarball; force=true)
-        @test download_and_verify([server], resource, tarball)
-        @test isfile(tarball)
-        rm(tarball; force=true)
     end
 
     # invalid hash
