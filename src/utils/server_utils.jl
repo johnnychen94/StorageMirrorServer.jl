@@ -241,6 +241,8 @@ function download_and_verify(
         throw_warnings = true,
         kwargs...
 )
+    isfile(tarball) && return true
+    
     race_lock = ReentrantLock()
     task_pool = []
 
