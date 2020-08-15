@@ -9,7 +9,6 @@
 # Note:
 #   * Initialization would typically take days, depending on the network bandwidth and CPU
 #   * set `JULIA_NUM_THREADS` to use multiple threads
-#   * if you find `Info: date pkg@version` over-verbose, you can redirect stdout to `/dev/null`
 #
 # Disk space requirements for a complete storage (increases over time):
 #   * `STATIC_DIR`: at least 500GB, would be better to have more than 3TB free space
@@ -37,9 +36,9 @@ registries = [
 parameters = Dict(
     # if needed, you can pass custom http parameters
     :http_parameters => Dict{Symbol, Any}(
-        :retry => false,
-        :retries => 1,
-        :timeout => 1200,
+        :retry => true,
+        :retries => 2,
+        :timeout => 7200,
         # download data using proxy
         # it also respects `http_proxy`, `https_proxy` and `no_proxy` environment variables
         # :proxy => "http://localhost:1080"
