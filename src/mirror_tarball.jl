@@ -176,8 +176,14 @@ end
 ### helpers
 function log_to_failure(resource::AbstractString, logfile)
     try
-        open(logfile, "a"; lock=true) do io
-            println(io, resource)
+        if VERSION < v"1.5"
+            open(logfile, "a") do io
+                println(io, resource)
+            end
+        else
+            open(logfile, "a"; lock=true) do io
+                println(io, resource)
+            end
         end
     catch err
         @warn err resource=resource
