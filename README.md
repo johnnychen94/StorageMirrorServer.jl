@@ -22,7 +22,7 @@ This package is written to make step 1 easy and stupid.
 
 ## Basic Usage
 
-1. add this package `]add https://github.com/johnnychen94/StorageServer.jl#v0.1.1-rc4`
+1. add this package `]add StorageMirrorServer`
 2. modify the [example script](examples/gen_static_full.example.jl) and save it as `gen_static.jl`
 3. pull/build data `julia gen_static.jl`
 
@@ -34,11 +34,12 @@ You can read the not-so-friendly docstrings for advanced usage, but here are som
 
 ## Examples
 
-This package is used to build the [BFSU](https://mirrors.bfsu.edu.cn/help/julia/) mirror site.
+This package is used to build the [BFSU] and the [SJTUG] mirror sites.
 
 ## Acknowledgement
 
-This package is modified from the original implementation [gen_static.jl](https://github.com/JuliaPackaging/PkgServer.jl/blob/2614c7d4d7fd8d422d0a82ffe5083a834be56bf8/bin/gen_static.jl).
+The first version of this package is modified from the original implementation [gen_static.jl]. During the development of this package, I get a lot of helps from [Elliot Saba](https://github.com/staticfloat) and [Stefan Karpinski](https://github.com/StefanKarpinski) to understand the Pkg & Storage protocol designs. 
+[Chi Zhang](https://github.com/skyzh) from SJTUG has shown his great patience and passion in testing out the rolling versions and given me a lot of feedbacks and suggestions.
 
 <!-- badges -->
 
@@ -52,3 +53,9 @@ This package is modified from the original implementation [gen_static.jl](https:
 [codecov-url]: https://codecov.io/gh/johnnychen94/StorageMirrorServer.jl
 
 [pkg-status]: https://img.shields.io/badge/status-experimental-red
+
+<!-- URLS -->
+
+[BFSU]: https://mirrors.bfsu.edu.cn/help/julia/
+[SJTUG]: https://mirrors.sjtug.sjtu.edu.cn/julia/
+[gen_static.jl]: https://github.com/JuliaPackaging/PkgServer.jl/blob/2614c7d4d7fd8d422d0a82ffe5083a834be56bf8/bin/gen_static.jl
