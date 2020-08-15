@@ -34,7 +34,7 @@ using Tar
         return rst
     end
 
-    @time rst_hash = timeout_call(1200) do
+    @time rst_hash = timeout_call(2400) do
         mirror_tarball(registry, upstreams, tmp_testdir; packages=packages, registry_hash=registry_hash)
     end
     @test rst_hash == registry_hash
@@ -87,7 +87,7 @@ using Tar
         end)
         return rst
     end
-    @time err_msg = timeout_call(30) do
+    @time err_msg = timeout_call(60) do
         @capture_err mirror_tarball(registry, upstreams, tmp_testdir; packages=packages, registry_hash=registry_hash)
     end
     @test occursin("$(length(packages)) previously failed resources are skipped during this build", err_msg)
