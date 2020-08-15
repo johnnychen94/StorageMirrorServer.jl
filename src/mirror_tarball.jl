@@ -117,7 +117,7 @@ function mirror_tarball(
 
     p = show_progress ? Progress(num_versions; desc="$name: Pulling packages: ") : nothing
     if !isempty(packages)
-        for pkg in packages
+        ThreadPools.@qthreads for pkg in packages
             for (ver, hash_info) in pkg.versions
                 tree_hash = hash_info["git-tree-sha1"]
                 resource = "/package/$(pkg.uuid)/$(tree_hash)"
@@ -136,16 +136,14 @@ function mirror_tarball(
     p = show_progress ? Progress(length(artifacts); desc="$name: Pulling artifacts: ") : nothing
     batch_size = min(length(artifacts), max(20, ceil(Int, length(artifacts)/(5*Threads.nthreads()))))
     if !isempty(artifacts)
-        for artifact_batch in partition(artifacts, batch_size)
-            for artifact in artifact_batch
-                if is_valid(artifact)
-                    tree_hash = artifact.hash
-                    resource = "/artifact/$(tree_hash)"
-                    tarball = joinpath(static_dir, "artifact", tree_hash)
+        ThreadPools.@qthreads for artifact in artifacts
+            if is_valid(artifact)
+                tree_hash = artifact.hash
+                resource = "/artifact/$(tree_hash)"
+                tarball = joinpath(static_dir, "artifact", tree_hash)
 
-                    _download(resource, tarball)
-                    isnothing(p) || ProgressMeter.next!(p; showvalues = [(:artifact, tree_hash), (:resource, resource), (:tarball, tarball)])
-                end
+                _download(resource, tarball)
+                isnothing(p) || ProgressMeter.next!(p; showvalues = [(:artifact, tree_hash), (:resource, resource), (:tarball, tarball)])
             end
         end
     end

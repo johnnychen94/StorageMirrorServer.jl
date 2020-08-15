@@ -254,7 +254,7 @@ function download_and_verify(
             download_and_verify(servers[1], resource, tarball; kwargs...)
         else
             for server in servers
-                task = Threads.@spawn begin
+                task = @async begin
                     if url_exists(server*resource; timeout=30_000, throw_warnings=throw_warnings)
                         # the first that hits here start downloading
                         if trylock(race_lock)
