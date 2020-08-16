@@ -46,6 +46,9 @@ parameters = Dict(
 
     # whether to show the progress bar
     :show_progress => true,
+
+    # for how long (hours) you want to skip resources in `/failed_resources.txt` until the next try
+    :skip_duration => 24,
 )
 
 for reg in registries

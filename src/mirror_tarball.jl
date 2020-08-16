@@ -19,6 +19,8 @@ Set environment variable `JULIA_NUM_THREADS` to enable multi-threads.
    can be used to build only a partial of the complete storage. Check [`read_packages`](@ref read_packages) for how
    to build packages info.
 - `show_progress::Bool`: `true` to show an additional progress meter. By default it is `true`.
+- `skip_duration::Real`: specify for how long (hours) you want to skip the resources listed in `/failed_resources.txt`
+   until the next try of them. By default it is `24` hours.
 
 """
 mirror_tarball(registry::Tuple, args...; kwargs...) = mirror_tarball(RegistryMeta(registry...), args...;kwargs...)
@@ -30,6 +32,7 @@ function mirror_tarball(
         http_parameters::Dict{Symbol, Any} = Dict{Symbol, Any}(),
         packages::Union{AbstractVector, Nothing} = nothing,
         registry_hash::Union{AbstractString, Nothing} = nothing,
+        skip_duration = 24,
         show_progress = true,
 )
     ### Except for the complex error handling strategy, the mirror routine
@@ -55,7 +58,6 @@ function mirror_tarball(
 
     # Some resources vanishes and can never be downloaded, we skip them in the next 24 hours
     last_try_time = query_last_try_datetime(failed_logfile) 
-    skip_duration = 24
     skipped = now() - last_try_time < Hour(skip_duration)
     skipped_records = skipped ? read_records(failed_logfile) : Set()
     function _download(resource, tarball; throw_warnings=true)
