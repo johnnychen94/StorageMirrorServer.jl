@@ -1,4 +1,4 @@
-using StorageMirrorServer: RegistryMeta, query_latest_hash, download_and_verify, query_artifacts, read_packages
+using StorageMirrorServer: RegistryMeta, query_latest_hash, download_and_verify, query_artifacts, read_packages, read_records
 using StorageMirrorServer: mirror_tarball
 using StorageMirrorServer: decompress
 using StorageMirrorServer: timeout_call
@@ -63,12 +63,16 @@ using Tar
     # test if vanished resources are listed here
     failed_resources_log = joinpath(tmp_testdir, "failed_resources.txt")
     @test isfile(failed_resources_log)
-    failed_records = readlines(failed_resources_log)
+    open(failed_resources_log, "a") do io
+        println(io, "/artifact/uuid/arti") # invalid line
+    end
+    failed_records = read_records(failed_resources_log)
     for pkg_uuid in [
         "8f1571ae-b3a1-52af-8ab1-32258739efdb", # StanMCMCChain
     ]
         @test any(x->occursin(pkg_uuid, x), failed_records)
     end
+    @test all(x->!occursin("/artifact/uuid/arti", x), failed_records)
 
     # an immediately incremental build should does nothing
     tarball = joinpath(tmp_testdir, "registry", registry.uuid, registry_hash)

@@ -161,13 +161,15 @@ function mirror_tarball(
 
     last_try_time = skipped ? last_try_time : now()
     failed_records = read_records(failed_logfile)
-    open(failed_logfile, "w") do io
-        println(io, last_try_time)
-        foreach(failed_records) do resource
-            if !isfile(joinpath(static_dir, resource[2:end])) # joinpath(pwd(), "/a") == "/a"
-                println(io, resource)
-            end
+    buffer = IOBuffer()
+    println(buffer, last_try_time)
+    foreach(failed_records) do resource
+        if !isfile(joinpath(static_dir, resource[2:end])) # joinpath(pwd(), "/a") == "/a"
+            println(buffer, resource)
         end
+    end
+    open(failed_logfile, "w") do io
+        write(io, take!(buffer))
     end
     @info("Mirror completed. There are $(length(failed_records) - length(skipped_records)) new fail-to-fetch resources and will be skipped in the next $(skip_duration) hours.",
         date=now(), registry=name, uuid=uuid, hash=latest_hash, upstreams=upstream_str)
@@ -211,12 +213,9 @@ function read_records(logfile)
     records = readlines(logfile)
     isempty(records) && return Set()
 
-    # skip datetime line
-    if query_last_try_datetime(logfile) != DateTime(0)
-        records = records[2:end]
+    filter(sort(collect(Set(records)))) do resource
+        !isnothing(match(resource_re, resource))
     end
-    
-    sort(collect(Set(records)))
 end
 
 function update_registries(registries_file, uuid, hash)
