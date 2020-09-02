@@ -155,7 +155,12 @@ function mirror_tarball(
     update_registries(registries_file, uuid, latest_hash)
 
     # clean up
-    foreach(glob(glob"**/*.tmp.*", static_dir)) do tarball
+    # Glob.jl doesn't support ** syntax yet: https://github.com/vtjnash/Glob.jl/issues/19
+    foreach(glob(glob"artifact/*.tmp.*", static_dir)) do tarball
+        rm(tarball; force=true)
+    end
+    foreach(glob(glob"*/*/*.tmp.*", static_dir)) do tarball
+        # /registry and /package
         rm(tarball; force=true)
     end
 
