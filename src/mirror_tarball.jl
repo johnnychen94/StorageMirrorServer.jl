@@ -33,8 +33,7 @@ function mirror_tarball(
         packages::Union{AbstractVector, Nothing} = nothing,
         registry_hash::Union{AbstractString, Nothing} = nothing,
         skip_duration = 24,
-        show_progress = true,
-        threaded=true,
+        show_progress = true
 )
     ### Except for the complex error handling strategy, the mirror routine
     ###   1. query upstreams to get the latest hash 
@@ -120,7 +119,7 @@ function mirror_tarball(
 
     p = show_progress ? Progress(num_versions; desc="$name: Pulling packages: ") : nothing
     if !isempty(packages)
-        ThreadPools.@qthreads for pkg in packages
+        function pkg_kernel(pkg)
             for (ver, hash_info) in pkg.versions
                 tree_hash = hash_info["git-tree-sha1"]
                 resource = "/package/$(pkg.uuid)/$(tree_hash)"
@@ -128,6 +127,13 @@ function mirror_tarball(
                 _download(resource, tarball)
                 isnothing(p) || ProgressMeter.next!(p; showvalues = [(:date, now()), (:package, pkg.name), (:version, ver), (:uuid, pkg.uuid), (:hash, tree_hash)])
             end
+        end
+        if use_threads()
+            ThreadPools.@qthreads for pkg in packages
+                pkg_kernel(pkg)
+            end
+        else
+            foreach(pkg_kernel, packages)
         end
     end
 
@@ -139,7 +145,7 @@ function mirror_tarball(
     p = show_progress ? Progress(length(artifacts); desc="$name: Pulling artifacts: ") : nothing
     batch_size = min(length(artifacts), max(20, ceil(Int, length(artifacts)/(5*Threads.nthreads()))))
     if !isempty(artifacts)
-        ThreadPools.@qthreads for artifact in artifacts
+        function artifact_kernel(artifact)
             if is_valid(artifact)
                 tree_hash = artifact.hash
                 resource = "/artifact/$(tree_hash)"
@@ -148,6 +154,13 @@ function mirror_tarball(
                 _download(resource, tarball)
                 isnothing(p) || ProgressMeter.next!(p; showvalues = [(:date, now()), (:artifact, tree_hash), (:resource, resource), (:tarball, tarball)])
             end
+        end
+        if use_threads()
+            ThreadPools.@qthreads for artifact in artifacts
+                artifact_kernel(artifact)
+            end
+        else
+            foreach(artifact_kernel, artifacts)
         end
     end
 
@@ -248,7 +261,7 @@ function query_artifacts(static_dir; fetch_full=false)
     artifact_glob_pattern = ["package", Regex(uuid_re), Regex(hash_re), r"[Julia]?Artifacts\.toml"]
 
     # incrementally extract Artifacts.toml
-    ThreadPools.@qbthreads for pkg_tarball in glob(tarball_glob_pattern, static_dir)
+    function artifact_kernel(pkg_tarball)
         pkg_uuid, pkg_hash = match(package_re, replace(pkg_tarball, Base.Filesystem.path_separator=>"/")).captures
         cache_dir = joinpath(cache_root, "package", pkg_uuid, pkg_hash)
 
@@ -275,6 +288,13 @@ function query_artifacts(static_dir; fetch_full=false)
             # and skip the extraction call
             return true # to notify with_cache_dir that this function call success
         end
+    end
+    if use_threads()
+        ThreadPools.@qbthreads for pkg_tarball in glob(tarball_glob_pattern, static_dir)
+            artifact_kernel(pkg_tarball)
+        end
+    else
+        foreach(artifact_kernel, glob(tarball_glob_pattern, static_dir))
     end
 
     # read all artifacts
@@ -312,3 +332,5 @@ function is_valid(artifact::Artifact)
 
     return true
 end
+
+use_threads() = get(ENV, "JULIA_NUM_THREADS", 1) != 1
