@@ -21,10 +21,10 @@ registry = RegistryMeta(
 )
 
 upstreams = [
-    "https://mirrors.sjtug.sjtu.edu.cn/julia",
-    "https://mirrors.bfsu.edu.cn/julia"
-    # "https://pkg.julialang.org",
-    # "https://us-east.storage.juliahub.com",
+    # "https://mirrors.sjtug.sjtu.edu.cn/julia",
+    # "https://mirrors.bfsu.edu.cn/julia"
+    "https://pkg.julialang.org",
+    "https://us-east.storage.juliahub.com",
 ]
 
 @testset "get_hash" begin
@@ -43,9 +43,6 @@ end
 @testset "url_exists" begin
     # @test url_exists("https://pkg.julialang.org/registries"; timeout=0)
     @test !url_exists("https://pkg.julialang.org/registries_1234")
-    mock(timeout_call => Mock((f, x) -> throw(TimeoutException(0.001)))) do _timeout_call
-        @test @suppress_err !url_exists("https://pkg.julialang.org/registries"; timeout=1)
-    end
 
     @test_throws ArgumentError url_exists("abc")
     err_msg = @capture_err url_exists("https://abc")
@@ -55,15 +52,6 @@ end
 @testset "query_latest_hash" begin
     @testset "single upstream" begin
         @test !isnothing(match(r"[0-9a-f]{40}", query_latest_hash(registry, upstreams[1])))
-
-        mock(timeout_call => Mock((f, x) -> throw(TimeoutException(15)))) do _timeout_call
-            @test nothing === @suppress_err query_latest_hash(registry, upstreams[1])
-
-            # url_exists is mocked, too
-            err_msg = @capture_err query_latest_hash(registry, upstreams[1])
-            @test occursin("failed to fetch resource", err_msg) || occursin("failed to send HEAD request", err_msg)
-            @test occursin("TimeoutException(15.0)", err_msg)
-        end
     end
 end
 

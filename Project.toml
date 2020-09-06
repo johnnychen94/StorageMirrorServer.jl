@@ -1,7 +1,7 @@
 name = "StorageMirrorServer"
 uuid = "c599abfa-5b8f-4a17-b52a-f0b922b74a92"
 authors = ["Johnny Chen <johnnychen94@hotmail.com>"]
-version = "0.1.7"
+version = "0.1.8"
 
 [deps]
 CodecZlib = "944b1d66-785c-5afd-91f1-9de20f533193"
@@ -28,9 +28,8 @@ TranscodingStreams = "0.9.5"
 julia = "1.4"
 
 [extras]
-SimpleMock = "a896ed2c-15a5-4479-b61d-a0e88e2a1d25"
 Suppressor = "fd094767-a336-5f1f-9728-57cf17d0bbfb"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["SimpleMock", "Suppressor", "Test"]
+test = ["Suppressor", "Test"]

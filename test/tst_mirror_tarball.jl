@@ -34,9 +34,9 @@ using Tar
         return rst
     end
 
-    @time rst_hash = timeout_call(2400) do
-        mirror_tarball(registry, upstreams, tmp_testdir; packages=packages, registry_hash=registry_hash)
-    end
+    # @time rst_hash = timeout_call(2400) do
+        rst_hash = mirror_tarball(registry, upstreams, tmp_testdir; packages=packages, registry_hash=registry_hash)
+    # end
     @test rst_hash == registry_hash
 
     # test if all packages are downloaded
