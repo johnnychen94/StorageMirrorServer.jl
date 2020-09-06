@@ -156,6 +156,7 @@ function mirror_tarball(
 
     # clean up
     # Glob.jl doesn't support ** syntax yet: https://github.com/vtjnash/Glob.jl/issues/19
+    safe_mode() && GC.gc()
     foreach(glob(glob"artifact/*.tmp.*", static_dir)) do tarball
         rm(tarball; force=true)
     end

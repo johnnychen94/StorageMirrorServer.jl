@@ -63,6 +63,7 @@ using Tar
     # test if vanished resources are listed here
     failed_resources_log = joinpath(tmp_testdir, "failed_resources.txt")
     @test isfile(failed_resources_log)
+    isfile(failed_resources_log) && @show read(failed_resources_log, String)
     open(failed_resources_log, "a") do io
         println(io, "/artifact/uuid/arti") # invalid line
     end

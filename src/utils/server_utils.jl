@@ -153,11 +153,14 @@ function write_atomic(f::Function, path::String)
             f(temp_file, io)
         end
         if retval !== false
+            safe_mode() && GC.gc()
             mv(temp_file, path; force=true)
         else
+            safe_mode() && GC.gc()
             rm(temp_file; force=true)
         end
     catch e
+        safe_mode() && GC.gc()
         rm(temp_file; force=true)
         rethrow(e)
     end
