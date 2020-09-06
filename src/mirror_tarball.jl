@@ -34,6 +34,7 @@ function mirror_tarball(
         registry_hash::Union{AbstractString, Nothing} = nothing,
         skip_duration = 24,
         show_progress = true,
+        threaded=true,
 )
     ### Except for the complex error handling strategy, the mirror routine
     ###   1. query upstreams to get the latest hash 
@@ -248,7 +249,7 @@ function query_artifacts(static_dir; fetch_full=false)
 
     # incrementally extract Artifacts.toml
     ThreadPools.@qbthreads for pkg_tarball in glob(tarball_glob_pattern, static_dir)
-        pkg_uuid, pkg_hash = match(package_re, pkg_tarball).captures
+        pkg_uuid, pkg_hash = match(package_re, replace(pkg_tarball, Base.Filesystem.path_separator=>"/")).captures
         cache_dir = joinpath(cache_root, "package", pkg_uuid, pkg_hash)
 
         with_cache_dir(cache_dir) do
@@ -256,6 +257,7 @@ function query_artifacts(static_dir; fetch_full=false)
             # https://github.com/johnnychen94/StorageMirrorServer.jl/issues/5
             mkpath(cache_dir)
             try
+                @info "extract Artifacts.toml from source package" date=now() uuid=pkg_uuid hash=pkg_hash
                 open(pkg_tarball, "r") do io
                     Tar.extract(decompress(io), cache_dir) do hdr
                         splitpath(hdr.path)[end] in artifact_names
