@@ -85,7 +85,10 @@ true
 function with_cache_dir(f, cache_dir::AbstractString; by=isdir)
     # by(cache_dir) might error if `cache_dir` doesn't exist
     verify() = isdir(cache_dir) && by(cache_dir)
-    clean_up() = rm(cache_dir; force=true, recursive=true)
+    function clean_up()
+        safe_mode() && GC.gc()
+        rm(cache_dir; force=true, recursive=true)
+    end
 
     verify() && return true
     try
