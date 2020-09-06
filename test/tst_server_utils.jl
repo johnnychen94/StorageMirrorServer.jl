@@ -21,10 +21,10 @@ registry = RegistryMeta(
 )
 
 upstreams = [
-    "https://mirrors.sjtug.sjtu.edu.cn/julia",
-    "https://mirrors.bfsu.edu.cn/julia"
-    # "https://pkg.julialang.org",
-    # "https://us-east.storage.juliahub.com",
+    # "https://mirrors.sjtug.sjtu.edu.cn/julia",
+    # "https://mirrors.bfsu.edu.cn/julia"
+    "https://pkg.julialang.org",
+    "https://us-east.storage.juliahub.com",
 ]
 
 @testset "get_hash" begin
