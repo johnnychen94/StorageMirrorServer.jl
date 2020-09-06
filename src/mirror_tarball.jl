@@ -54,15 +54,22 @@ function mirror_tarball(
     uuid = registry.uuid
     name = registry.name
     failed_logfile = joinpath(static_dir, "failed_resources.txt")
+    blocklist_file = joinpath(static_dir, "blocklist.txt")
     upstream_str = join(upstreams, ", ")
 
     # Some resources vanishes and can never be downloaded, we skip them in the next 24 hours
     last_try_time = query_last_try_datetime(failed_logfile) 
     skipped = now() - last_try_time < Hour(skip_duration)
     skipped_records = skipped ? read_records(failed_logfile) : Set()
+    blocked_resourced = read_records(blocklist_file)
     function _download(resource, tarball; throw_warnings=true)
         if resource in skipped_records
             @info "fetching resource has failed in the last $skip_duration hours, skip it" resource date=now()
+            return false
+        end
+
+        if resource in blocked_resourced
+            @info "resource is listed in blocklist, skip it" resource date=now()
             return false
         end
 

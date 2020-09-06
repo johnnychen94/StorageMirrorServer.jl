@@ -47,7 +47,10 @@ parameters = Dict(
     # whether to show the progress bar
     :show_progress => true,
 
-    # for how long (hours) you want to skip resources in `/failed_resources.txt` until the next try
+    # This script generates a `failed_resource.txt` that records failed-to-downloaded files. Some of
+    # these have already disappears in the network and no longer available. By default, items in
+    # this file are skipped in next 24 hours. You can configure `skip_duration` to make it larger.
+    # Or, you could manually create a `blocklist.txt` to permanently skip them.
     :skip_duration => 24
 )
 
