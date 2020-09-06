@@ -1,7 +1,7 @@
 name = "StorageMirrorServer"
 uuid = "c599abfa-5b8f-4a17-b52a-f0b922b74a92"
 authors = ["Johnny Chen <johnnychen94@hotmail.com>"]
-version = "0.1.7"
+version = "0.1.8"
 
 [deps]
 CodecZlib = "944b1d66-785c-5afd-91f1-9de20f533193"
