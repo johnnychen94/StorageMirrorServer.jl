@@ -29,6 +29,12 @@ const default_http_parameters = Dict(
     :timeout => 7200,
 )
 
+# Experimental only: calling GC.gc() before removing temp files
+const _SAVE_MODE = [true]
+safe_mode() = _SAVE_MODE[1]
+enable_safe_mode() = _SAVE_MODE[1] = true
+disable_safe_mode() = _SAVE_MODE[1] = false
+
 export mirror_tarball, read_packages
 
 include("types.jl")
