@@ -62,24 +62,24 @@ function mirror_tarball(
     skipped_records = skipped ? read_records(failed_logfile) : Set()
     function _download(resource, tarball; throw_warnings=true)
         if resource in skipped_records
-            @info "fetching resource has failed in the last $skip_duration hours, skip it" resource
+            @info "fetching resource has failed in the last $skip_duration hours, skip it" resource date=now()
             return false
         end
 
         try
-            show_progress && @info "downloading resource..." resource=resource tarball=tarball
+            show_progress && @info "downloading resource..." resource=resource tarball=tarball date=now()
             rst = download_and_verify(upstreams, resource, tarball; http_parameters=http_parameters, throw_warnings=throw_warnings)
             if rst !== false
                 return true
             else
-                show_progress && @info "skip resource fetching in next $skip_duration hours" resource
+                show_progress && @info "skip resource fetching in next $skip_duration hours" resource date=now()
                 log_to_failure(resource, failed_logfile)
                 return false
             end
         catch err
             throw_warnings && @warn err resource=resource
             rm(tarball; force=true)
-            show_progress && @info "skip resource fetching in next $skip_duration hours" resource
+            show_progress && @info "skip resource fetching in next $skip_duration hours" resource date=now()
             log_to_failure(resource, failed_logfile)
             return false
         end
@@ -89,7 +89,7 @@ function mirror_tarball(
     upstreams = normalize_upstream.(upstreams)
     latest_hash = isnothing(registry_hash) ? query_latest_hash(registry, upstreams) : registry_hash
     if isnothing(latest_hash)
-        @error "failed to query the latest registry hash" uuid=uuid hash=latest_hash upstreams=upstreams
+        @error "failed to query the latest registry hash" uuid=uuid hash=latest_hash upstreams=upstreams date=now()
         error("stop mirroring.")
     end
 
@@ -98,7 +98,7 @@ function mirror_tarball(
     tarball = joinpath(static_dir, "registry", uuid, latest_hash)
     rst = _download(resource, tarball)
     if !rst
-        @error "failed to fetch registry tarball" uuid=uuid hash=latest_hash upstreams=upstreams
+        @error "failed to fetch registry tarball" uuid=uuid hash=latest_hash upstreams=upstreams date=now()
         error("stop mirroring.")
     end
     
@@ -115,7 +115,7 @@ function mirror_tarball(
 
     num_versions = mapreduce(x -> length(x.versions), +, packages)
     @info "Start mirrorring" date=now() registry=name uuid=uuid hash=latest_hash num_versions=num_versions upstreams=upstream_str
-    skipped && @info "$(length(skipped_records)) previously failed resources are skipped during this build"
+    skipped && @info "$(length(skipped_records)) previously failed resources are skipped during this build" date=now()
 
     p = show_progress ? Progress(num_versions; desc="$name: Pulling packages: ") : nothing
     if !isempty(packages)
@@ -125,16 +125,16 @@ function mirror_tarball(
                 resource = "/package/$(pkg.uuid)/$(tree_hash)"
                 tarball = joinpath(static_dir, "package", pkg.uuid, tree_hash)
                 _download(resource, tarball)
-                isnothing(p) || ProgressMeter.next!(p; showvalues = [(:package, pkg.name), (:version, ver), (:uuid, pkg.uuid), (:hash, tree_hash)])
+                isnothing(p) || ProgressMeter.next!(p; showvalues = [(:date, now()), (:package, pkg.name), (:version, ver), (:uuid, pkg.uuid), (:hash, tree_hash)])
             end
         end
     end
 
     # 4. read and download `/artifact/$hash`
     # only returns artifacts that are not stored in static_dir
-    @info "querying artifacts info, this may take some time..."
+    @info "querying artifacts info, this may take some time..." date=now()
     artifacts = query_artifacts(static_dir; fetch_full=false)
-    @info "found $(length(artifacts)) new artifacts"
+    @info "found $(length(artifacts)) new artifacts" date=now()
     p = show_progress ? Progress(length(artifacts); desc="$name: Pulling artifacts: ") : nothing
     batch_size = min(length(artifacts), max(20, ceil(Int, length(artifacts)/(5*Threads.nthreads()))))
     if !isempty(artifacts)
@@ -145,7 +145,7 @@ function mirror_tarball(
                 tarball = joinpath(static_dir, "artifact", tree_hash)
 
                 _download(resource, tarball)
-                isnothing(p) || ProgressMeter.next!(p; showvalues = [(:artifact, tree_hash), (:resource, resource), (:tarball, tarball)])
+                isnothing(p) || ProgressMeter.next!(p; showvalues = [(:date, now()), (:artifact, tree_hash), (:resource, resource), (:tarball, tarball)])
             end
         end
     end
