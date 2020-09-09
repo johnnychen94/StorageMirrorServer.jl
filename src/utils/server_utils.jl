@@ -149,17 +149,14 @@ function write_atomic(f::Function, path::String)
     isdir(dirname(path)) || mkpath(dirname(path))
     temp_file = path * ".tmp." * randstring()
     try
-        retval = open(temp_file, "w") do io
-            f(temp_file, io)
-        end
+        retval = f(temp_file)
         if retval !== false
             mv(temp_file, path; force=true)
-        else
-            rm(temp_file; force=true)
         end
     catch e
-        rm(temp_file; force=true)
         rethrow(e)
+    finally
+        rm(temp_file; force=true)
     end
 end
 
@@ -187,14 +184,12 @@ function download_and_verify(
     # of tarball fails
     isfile(tarball) && return true
 
-    write_atomic(tarball) do temp_file, io
+    write_atomic(tarball) do temp_file
         try
-            response = timeout_call(timeout) do 
-                    HTTP.get(server * resource;
-                        response_stream = io,
-                        http_parameters...
-                    )
-            end
+            # HTTP.get is problematic and occasionally hangs, use `curl` as a replacement
+            # Set Content-Encoding because we want exactly the same content as the upstream serves
+            # without any processing
+            run(`curl -sSfL -H "Content-Type: application/tar" -H "Content-Encoding: identity" $server$resource -o $temp_file`)
         catch err
             @warn "failed to fetch resource" error=err resource=server*resource
             return false
