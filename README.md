@@ -34,7 +34,7 @@ You can read the not-so-friendly docstrings for advanced usage, but here are som
 
 ## Examples
 
-This package is used to build the [BFSU] and the [SJTUG] mirror sites.
+This package is used to build the [BFSU], [TUNA] and the [SJTUG] mirror sites.
 
 ## Acknowledgement
 
@@ -57,5 +57,6 @@ The first version of this package is modified from the original implementation [
 <!-- URLS -->
 
 [BFSU]: https://mirrors.bfsu.edu.cn/help/julia/
+[TUNA]: https://mirrors.tuna.tsinghua.edu.cn/help/julia/
 [SJTUG]: https://mirrors.sjtug.sjtu.edu.cn/julia/
 [gen_static.jl]: https://github.com/JuliaPackaging/PkgServer.jl/blob/2614c7d4d7fd8d422d0a82ffe5083a834be56bf8/bin/gen_static.jl
