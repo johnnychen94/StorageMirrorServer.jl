@@ -9,6 +9,20 @@ const resource_re = Regex("""
   | ^/artifact/($hash_re)\$
 """, "x")
 
+function gen_curl_cmd(url, download_path)
+    options = [
+        "-sSfL",
+        "-H", "Content-Type: application/tar",
+        "-H", "Content-Encoding: identity",
+    ]
+    if haskey(ENV, "BIND_ADDRESS")
+        addr = ENV["BIND_ADDRESS"]
+        pushfirst!(options, "--interface", addr)
+    end
+
+    return `curl $options $url -o $download_path`
+end
+
 """
     query_latest_hash(registry, server)
 
@@ -189,7 +203,7 @@ function download_and_verify(
             # HTTP.get is problematic and occasionally hangs, use `curl` as a replacement
             # Set Content-Encoding because we want exactly the same content as the upstream serves
             # without any processing
-            run(`curl -sSfL -H "Content-Type: application/tar" -H "Content-Encoding: identity" $server$resource -o $temp_file`)
+            run(gen_curl_cmd(server*resource, temp_file))
         catch err
             @warn "failed to fetch resource" error=err resource=server*resource
             return false
