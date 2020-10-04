@@ -32,6 +32,13 @@ You can read the not-so-friendly docstrings for advanced usage, but here are som
 * Utilize multiple threads, set environment variable `JULIA_NUM_THREADS`. For example,
   `JULIA_NUM_THREADS=8 julia gen_static.jl` would use 8 threads to pull data.
 
+## Environment Variables
+
+There are some environment variables that you can use to help configure the download worker `curl`:
+
+* `BIND_ADDRESS` that passes to `curl --interface $BIND_ADDRESS`, this can be useful when multiple
+  network cards are available (newly added in `v0.2.1`)
+
 ## Examples
 
 This package is used to build the [BFSU] and the [SJTUG] mirror sites.
