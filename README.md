@@ -41,7 +41,12 @@ There are some environment variables that you can use to help configure the down
 
 ## Examples
 
-This package is used to build the [BFSU], [TUNA] and the [SJTUG] mirror sites.
+This package is used to power the Julia pkg mirror in the following mirror sites:
+
+* [BFSU] in Beijing Foreign Studies University
+* [TUNA] in Tsinghua University
+* [SJTUG] in Shanghai Jiao Tong University
+* [USTC] in University of Science and Technology of China
 
 ## Acknowledgement
 
@@ -66,4 +71,5 @@ The first version of this package is modified from the original implementation [
 [BFSU]: https://mirrors.bfsu.edu.cn/help/julia/
 [TUNA]: https://mirrors.tuna.tsinghua.edu.cn/help/julia/
 [SJTUG]: https://mirrors.sjtug.sjtu.edu.cn/julia/
+[USTC]: http://mirrors.ustc.edu.cn/julia
 [gen_static.jl]: https://github.com/JuliaPackaging/PkgServer.jl/blob/2614c7d4d7fd8d422d0a82ffe5083a834be56bf8/bin/gen_static.jl
