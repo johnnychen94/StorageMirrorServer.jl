@@ -12,7 +12,7 @@ const resource_re = Regex("""
 function gen_curl_cmd(url, download_path)
     options = [
         "-sSfL",
-        "-H", "Content-Type: application/tar",
+        "-H", "Content-Type: application/tar+gzip",
         "-H", "Content-Encoding: identity",
     ]
     if haskey(ENV, "BIND_ADDRESS")
